@@ -1,0 +1,68 @@
+name: herb_scan
+description: "Ứng dụng nhận diện lá cây thuốc Việt Nam"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI & Navigation
+  cupertino_icons: ^1.0.8
+  go_router: ^14.2.7
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  firebase_storage: ^12.3.2
+  
+  # Camera & Image Processing
+  camera: ^0.11.0+2
+  image_picker: ^1.1.2
+  image: ^4.0.15
+  
+  # Machine Learning (tạm thời comment để tránh xung đột)
+  # tflite_flutter: ^0.9.0
+  # tflite_flutter_helper: ^0.3.1
+  
+  # Storage & Preferences
+  shared_preferences: ^2.3.2
+  path_provider: ^2.1.4
+  
+  # HTTP & API
+  http: ^1.2.2
+  dio: ^5.7.0
+  
+  # Utilities
+  intl: ^0.19.0
+  permission_handler: ^11.3.1
+  flutter_local_notifications: ^17.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/models/
+    - assets/icons/
+    - assets/IconApp/
+    - assets/images/images_intro/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/IconApp/app_icon.png"
+  remove_alpha_ios: true
