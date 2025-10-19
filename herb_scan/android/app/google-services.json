@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "38629570189",
+    "project_id": "herb-b7af4",
+    "storage_bucket": "herb-b7af4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:38629570189:android:d5ae045249ec8c28b1d4c4",
+        "android_client_info": {
+          "package_name": "com.example.herb_scan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "38629570189-l8v4ajgi9f6h0lart2hquacogumnmsp2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.herb_scan",
+            "certificate_hash": "a599e4ce96e653fa953edbca772d1f6b363547ae"
+          }
+        },
+        {
+          "client_id": "38629570189-b6k2uqmnfdg7jkkh700v40cppto77jq1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABB_cjZ4mV9VdJlMdwaB2fVgprTMNpAVw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "38629570189-b6k2uqmnfdg7jkkh700v40cppto77jq1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_colors.dart';
-import '../../widgets/intro_navigation.dart';
-import '../home/home_screen.dart';
+import '../../constants/index.dart';
+import '../../models/intro_content.dart';
+import '../../widgets/index.dart';
+import '../login/login_screen.dart';
 
 class IntroMainScreen extends StatefulWidget {
   const IntroMainScreen({super.key});
@@ -38,10 +39,10 @@ class _IntroMainScreenState extends State<IntroMainScreen> {
         currentIndex++;
       });
     } else {
-      // Chuyển sang HomeScreen
+      // Chuyển sang LoginScreen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
   }
@@ -139,28 +140,14 @@ class _IntroMainScreenState extends State<IntroMainScreen> {
                               children: [
                                 Text(
                                   content.title,
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 24,
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.50,
-                                    letterSpacing: 0.12,
-                                  ),
+                                  style: AppTheme.headingMedium,
                                 ),
                                 SizedBox(height: 10),
                                 SizedBox(
                                   width: 318,
                                   child: Text(
                                     content.description,
-                                    style: TextStyle(
-                                      color: const Color(0xFF4E4B66),
-                                      fontSize: 16,
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.50,
-                                      letterSpacing: 0.12,
-                                    ),
+                                    style: AppTheme.bodyLarge,
                                   ),
                                 ),
                               ],
@@ -191,14 +178,3 @@ class _IntroMainScreenState extends State<IntroMainScreen> {
   }
 }
 
-class IntroContent {
-  final String imagePath;
-  final String title;
-  final String description;
-
-  IntroContent({
-    required this.imagePath,
-    required this.title,
-    required this.description,
-  });
-}
