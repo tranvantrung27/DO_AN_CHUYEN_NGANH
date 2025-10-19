@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Herb Scan</string>
+    <!-- reCAPTCHA Site Key - khóa mới nhất -->
+    <string name="recaptcha_site_key">6Ldt5t8rAAAAAGgNWUlyngDUa75wjADVycevI8-X</string>
+</resources>

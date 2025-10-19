@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../constants/index.dart';
+import 'common/animated_dot_indicator.dart';
 
 class IntroNavigation extends StatelessWidget {
   final int currentIndex; // 0, 1, 2 cho 3 màn hình
@@ -20,27 +21,19 @@ class IntroNavigation extends StatelessWidget {
     return Container(
       width: 430,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      decoration: BoxDecoration(color: Colors.white),
+      decoration: const BoxDecoration(color: Colors.white),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Dots indicator
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (index) {
-              return Container(
-                margin: EdgeInsets.only(right: index < 2 ? 5 : 0),
-                width: 14,
-                height: 14,
-                decoration: ShapeDecoration(
-                  color: index == currentIndex 
-                    ? AppColors.primaryGreen 
-                    : const Color(0xFFA0A3BD),
-                  shape: OvalBorder(),
-                ),
-              );
-            }),
+          // Animated Dots indicator using reusable component
+          AnimatedDotIndicator(
+            itemCount: 3,
+            currentIndex: currentIndex,
+            activeColor: AppColors.primaryGreen,
+            inactiveColor: const Color(0xFFA0A3BD),
+            animationDuration: AppAnimations.normal,
+            animationCurve: AppAnimations.easeInOut,
           ),
           // Navigation buttons
           Row(
@@ -52,17 +45,12 @@ class IntroNavigation extends StatelessWidget {
                   onTap: onBack,
                   child: Text(
                     'Quay lại',
-                    style: TextStyle(
+                    style: AppTheme.buttonText.copyWith(
                       color: const Color(0xFFB0B3B8),
-                      fontSize: 16,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      height: 1.50,
-                      letterSpacing: 0.12,
                     ),
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
               ],
               // Nút "Tiếp tục" hoặc "Bắt đầu"
               GestureDetector(
@@ -71,18 +59,13 @@ class IntroNavigation extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
                   decoration: ShapeDecoration(
                     color: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
                   child: Text(
                     nextButtonText,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      height: 1.50,
-                      letterSpacing: 0.12,
-                    ),
+                    style: AppTheme.buttonText,
                   ),
                 ),
               ),

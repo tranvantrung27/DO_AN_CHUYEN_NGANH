@@ -17,11 +17,34 @@ dependencies:
   # State Management
   provider: ^6.1.2
   
+  # Animation & UI Enhancement
+  flutter_animate: ^4.5.0          # Powerful animations with minimal code
+  smooth_page_indicator: ^1.2.0+3  # Beautiful page indicators
+  shimmer: ^3.0.0                  # Loading shimmer effects
+  lottie: ^3.1.2                   # Lottie animations
+  flutter_staggered_animations: ^1.1.1  # Staggered list animations
+  
+  # UI Components
+  flutter_svg: ^2.2.1           # SVG support
+  cached_network_image: ^3.4.1     # Optimized image loading
+  photo_view: ^0.15.0              # Image zoom and pan
+  flutter_spinkit: ^5.2.1          # Loading indicators
+  
+  # Design System
+  google_fonts: ^6.2.1             # Google Fonts integration
+  flutter_screenutil: ^5.9.3       # Screen adaptation
+  
+  # Haptic Feedback & Polish
+  vibration: ^2.0.0                # Haptic feedback
+  flutter_native_splash: ^2.4.1    # Native splash screen
+  
   # Firebase
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.3
   firebase_storage: ^12.3.2
+  google_sign_in: ^6.2.1
+  firebase_app_check: ^0.3.2+10
   
   # Camera & Image Processing
   camera: ^0.11.0+2
@@ -37,13 +60,16 @@ dependencies:
   path_provider: ^2.1.4
   
   # HTTP & API
-  http: ^1.2.2
+  http: ^1.5.0
   dio: ^5.7.0
   
   # Utilities
   intl: ^0.19.0
   permission_handler: ^11.3.1
   flutter_local_notifications: ^17.2.3
+  card_loading: ^0.3.2
+  html: ^0.15.6
+  dart_rss: ^3.0.3
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +84,7 @@ flutter:
     - assets/images/
     - assets/models/
     - assets/icons/
+    - assets/icons/icon_navigtion/
     - assets/IconApp/
     - assets/images/images_intro/
 
