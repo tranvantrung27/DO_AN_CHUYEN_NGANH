@@ -1,6 +1,6 @@
 <p align="center">
   <!-- Hero/Banner image. Put your background image at assets/readme/background.png -->
-  <img src="herb_scan/assets/readme/background.png" alt="HerbScan Banner" width="100%">
+  <img src="herb_scan/assets/images/background.png" alt="HerbScan Banner" width="100%">
 </p>
 
 <br>
