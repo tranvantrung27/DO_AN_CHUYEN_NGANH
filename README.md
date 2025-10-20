@@ -5,10 +5,7 @@
 <!-- Banner: tự động đổi ảnh theo dark/light -->
 <p align="center">
   <picture>
-    <!-- Dark mode -->
-    <source media="(prefers-color-scheme: dark)" srcset="herb_scan/assets/images/banner-dark.png">
-    <!-- Light mode -->
-    <img src="herb_scan/assets/images/banner-light.png" alt="HerbScan Banner" width="100%">
+    <img src="herb_scan/assets/images/backgroud.png" alt="HerbScan Banner" width="100%">
   </picture>
 </p>
 
