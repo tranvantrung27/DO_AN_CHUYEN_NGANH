@@ -1,6 +1,6 @@
 <p align="center">
   <!-- Hero/Banner image. Put your background image at assets/readme/background.png -->
-  <img src="assets/readme/background.png" alt="HerbScan Banner" width="100%">
+  <img src="herb_scan/assets/readme/background.png" alt="HerbScan Banner" width="100%">
 </p>
 
 <br>
@@ -10,7 +10,7 @@
 
 <div align="center">
 
-![HerbScan Logo](assets/IconApp/app_icon.png)
+![HerbScan Logo](herb_scan/assets/IconApp/app_icon.png)
 
 **Ứng dụng AI nhận diện thảo dược Việt Nam với công nghệ Machine Learning**
 
@@ -139,11 +139,11 @@ lib/
 
 | Trang Chủ | Quét Thảo Dược | Kho Thảo Dược |
 |-----------|----------------|---------------|
-| ![Home](assets/screenshots/home.png) | ![Scan](assets/screenshots/scan.png) | ![Library](assets/screenshots/library.png) |
+| ![Home](herb_scan/assets/screenshots/home.png) | ![Scan](herb_scan/assets/screenshots/scan.png) | ![Library](herb_scan/assets/screenshots/library.png) |
 
 | Tin Tức | Lịch Sử | Cài Đặt |
 |---------|---------|---------|
-| ![News](assets/screenshots/news.png) | ![History](assets/screenshots/history.png) | ![Settings](assets/screenshots/settings.png) |
+| ![News](herb_scan/assets/screenshots/news.png) | ![History](herb_scan/assets/screenshots/history.png) | ![Settings](herb_scan/assets/screenshots/settings.png) |
 
 </div>
 
