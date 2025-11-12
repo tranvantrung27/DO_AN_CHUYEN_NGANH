@@ -127,6 +127,7 @@ class _NewsTabState extends State<NewsTab> {
           imageUrl: '',
           dateText: '',
           title: '',
+          subtitle: '',
           sourceName: '',
           sourceAvatarUrl: '',
           timeAgo: '',
@@ -208,6 +209,7 @@ class _NewsTabState extends State<NewsTab> {
           imageUrl: article.imageUrl,
           dateText: date,
           title: article.title,
+          subtitle: '', // News không có subtitle
           sourceName: article.sourceName,
           sourceAvatarUrl: article.sourceLogo,
           timeAgo: '',

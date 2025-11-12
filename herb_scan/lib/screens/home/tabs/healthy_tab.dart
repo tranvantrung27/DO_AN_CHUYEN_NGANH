@@ -30,6 +30,7 @@ class _HealthyTabState extends State<HealthyTab> {
           imageUrl: 'https://via.placeholder.com/192.png?text=Healthy+$index',
           dateText: 'Thứ tư, 17/9/2025, 09:15 (GMT+7)',
           title: 'Sống khỏe #$index - mẹo dinh dưỡng, vận động, tinh thần',
+          subtitle: '',
           sourceName: 'WHO',
           sourceAvatarUrl: 'https://via.placeholder.com/40.png?text=W',
           timeAgo: '${index + 3}h ago',

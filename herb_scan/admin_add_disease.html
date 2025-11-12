@@ -1,0 +1,1008 @@
+/<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Herb Scan</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      min-height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(255,255,255,0.3);
+    }
+    .menu-item {
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .menu-item:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateX(5px);
+    }
+    .menu-item.active {
+      background: rgba(255,255,255,0.2);
+      font-weight: 600;
+    }
+    /* Main Content */
+    .main-content {
+      margin-left: 250px;
+      flex: 1;
+      padding: 40px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    /* List View */
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    .btn-warning {
+      background: #ffc107;
+      color: #333;
+    }
+    .btn-warning:hover {
+      background: #e0a800;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      margin-bottom: 20px;
+    }
+    .article-list {
+      display: grid;
+      gap: 16px;
+    }
+    .article-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .article-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+    .article-item.inactive {
+      opacity: 0.6;
+      background: #f8f9fa;
+    }
+    .article-thumb {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .article-info {
+      flex: 1;
+    }
+    .article-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .article-subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .article-meta {
+      font-size: 12px;
+      color: #999;
+    }
+    .article-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+    .badge-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    .badge-inactive {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    /* Detail View */
+    .detail-view {
+      display: none;
+    }
+    .detail-view.active {
+      display: block;
+    }
+    .detail-image {
+      width: 100%;
+      max-width: 400px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .detail-info {
+      margin-bottom: 20px;
+    }
+    .detail-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    .action-buttons .btn {
+      flex: 1;
+      min-width: 120px;
+    }
+    /* Form View */
+    .form-view {
+      display: none;
+    }
+    .form-view.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    /* Editor Toolbar */
+    .editor-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px;
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px 8px 0 0;
+      flex-wrap: wrap;
+    }
+    .toolbar-btn {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .toolbar-btn:hover {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .toolbar-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .editor-wrapper {
+      border: 2px solid #e0e0e0;
+      border-radius: 0 0 8px 8px;
+    }
+    .editor-wrapper textarea {
+      border: none;
+      border-radius: 0;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      display: none;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 200px;
+      }
+      .main-content {
+        margin-left: 200px;
+        padding: 20px;
+      }
+      .container {
+        padding: 20px;
+      }
+      .article-item {
+        flex-direction: column;
+      }
+      .article-thumb {
+        width: 100%;
+        height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h1>Herb Scan</h1>
+    <div class="menu-item active" onclick="switchTab('diseases')" id="menu-diseases">
+      🏥 Các bệnh
+    </div>
+    <div class="menu-item" onclick="switchTab('healthy')" id="menu-healthy">
+      💚 Sống khỏe
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- List View -->
+      <div id="listView" class="list-view">
+        <div class="list-header">
+          <h2 id="listTitle">📋 Danh sách bài viết - Các bệnh</h2>
+          <button class="btn btn-primary" onclick="showAddForm()">➕ Đăng bài mới</button>
+        </div>
+        <div id="articleList" class="article-list">
+          <!-- Articles will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Detail View -->
+      <div id="detailView" class="detail-view">
+        <button class="btn btn-back" onclick="showList()">← Quay lại</button>
+        <h2 id="detailTitle">Chi tiết bài viết</h2>
+        <div id="detailContent">
+          <!-- Detail content will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Form View (Add/Edit) -->
+      <div id="formView" class="form-view">
+        <button class="btn btn-back" onclick="showList()">← Quay lại</button>
+        <h2 id="formTitle">🪴 Đăng bài mới</h2>
+        
+        <div class="form-group">
+          <label for="imageUrl">🔗 Link ảnh (bắt buộc)</label>
+          <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg" required>
+        </div>
+
+        <div class="form-group">
+          <label for="title">📝 Tiêu đề lớn (bắt buộc)</label>
+          <input type="text" id="title" placeholder="Nhập tiêu đề lớn của bài viết" required>
+        </div>
+
+        <div class="form-group">
+          <label for="subtitle">📄 Tiêu đề phụ (bắt buộc)</label>
+          <textarea id="subtitle" placeholder="Nhập tiêu đề phụ/mô tả ngắn" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="content">📝 Nội dung bài viết (bắt buộc)</label>
+          <small style="color: #666; display: block; margin-bottom: 8px;">
+            💡 Sử dụng các nút bên dưới hoặc phím tắt: <strong>Ctrl+B</strong> (in đậm), <strong>Ctrl+I</strong> (in nghiêng), <strong>Ctrl+U</strong> (gạch chân), <strong>Ctrl+Shift+S</strong> (gạch ngang) | <strong>Ctrl+Z</strong> (quay lại), <strong>Ctrl+Y</strong> (làm lại)
+          </small>
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('bold')" title="In đậm (Ctrl+B)">
+              <strong>B</strong>
+            </button>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('italic')" title="In nghiêng (Ctrl+I)">
+              <em>I</em>
+            </button>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('underline')" title="Gạch chân (Ctrl+U) - Dùng HTML tag">
+              <u>U</u>
+            </button>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('strikethrough')" title="Gạch ngang (Ctrl+Shift+S)">
+              <s>S</s>
+            </button>
+            <div style="width: 1px; background: #ddd; margin: 0 4px;"></div>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('h1')" title="Tiêu đề lớn">
+              H1
+            </button>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('h2')" title="Tiêu đề nhỏ">
+              H2
+            </button>
+            <button type="button" class="toolbar-btn" onclick="formatTextWithHistory('h3')" title="Tiêu đề nhỏ hơn">
+              H3
+            </button>
+          </div>
+          <div class="editor-wrapper">
+            <textarea id="content" placeholder="Nhập nội dung chi tiết của bài viết..." required style="min-height: 300px;"></textarea>
+          </div>
+        </div>
+
+        <button id="submitBtn" class="btn btn-primary" onclick="saveDoc()">✅ Lưu bài viết</button>
+
+        <div id="status" class="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyABB_cjZ4mV9VdJlMdwaB2fVgprTMNpAVw",
+      authDomain: "herb-b7af4.firebaseapp.com",
+      projectId: "herb-b7af4",
+      storageBucket: "herb-b7af4.firebasestorage.app",
+      messagingSenderId: "38629570189",
+      appId: "1:38629570189:android:d5ae045249ec8c28b1d4c4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // State
+    let currentTab = 'diseases';
+    let currentView = 'list'; // 'list', 'detail', 'form'
+    let editingDocId = null;
+    let viewingDocId = null;
+
+    // Initialize
+    window.onload = function() {
+      switchTab('diseases');
+      setupEditorShortcuts();
+    };
+
+    // Store the event handler to avoid duplicate listeners
+    let editorKeydownHandler = null;
+
+    // Undo/Redo history
+    let editorHistory = [];
+    let historyIndex = -1;
+    let isUndoRedo = false;
+
+    // Save state to history
+    function saveToHistory() {
+      const contentTextarea = document.getElementById('content');
+      if (!contentTextarea || isUndoRedo) return;
+
+      const currentValue = contentTextarea.value;
+      const currentSelection = {
+        start: contentTextarea.selectionStart,
+        end: contentTextarea.selectionEnd
+      };
+
+      // Remove any history after current index (when user makes new change after undo)
+      if (historyIndex < editorHistory.length - 1) {
+        editorHistory = editorHistory.slice(0, historyIndex + 1);
+      }
+
+      // Add new state
+      editorHistory.push({
+        value: currentValue,
+        selection: currentSelection
+      });
+
+      // Limit history to 50 states
+      if (editorHistory.length > 50) {
+        editorHistory.shift();
+      } else {
+        historyIndex++;
+      }
+    }
+
+    // Undo
+    function undoEditor() {
+      const contentTextarea = document.getElementById('content');
+      if (!contentTextarea || historyIndex <= 0) return;
+
+      isUndoRedo = true;
+      historyIndex--;
+      const state = editorHistory[historyIndex];
+      contentTextarea.value = state.value;
+      contentTextarea.setSelectionRange(state.selection.start, state.selection.end);
+      contentTextarea.focus();
+      setTimeout(() => { isUndoRedo = false; }, 100);
+    }
+
+    // Redo
+    function redoEditor() {
+      const contentTextarea = document.getElementById('content');
+      if (!contentTextarea || historyIndex >= editorHistory.length - 1) return;
+
+      isUndoRedo = true;
+      historyIndex++;
+      const state = editorHistory[historyIndex];
+      contentTextarea.value = state.value;
+      contentTextarea.setSelectionRange(state.selection.start, state.selection.end);
+      contentTextarea.focus();
+      setTimeout(() => { isUndoRedo = false; }, 100);
+    }
+
+    // Initialize history when form is shown
+    function initEditorHistory() {
+      const contentTextarea = document.getElementById('content');
+      if (!contentTextarea) return;
+
+      editorHistory = [{
+        value: contentTextarea.value,
+        selection: {
+          start: contentTextarea.selectionStart,
+          end: contentTextarea.selectionEnd
+        }
+      }];
+      historyIndex = 0;
+    }
+
+    // Setup keyboard shortcuts for editor
+    function setupEditorShortcuts() {
+      const contentTextarea = document.getElementById('content');
+      if (!contentTextarea) return;
+
+      // Remove old listener if exists
+      if (editorKeydownHandler) {
+        contentTextarea.removeEventListener('keydown', editorKeydownHandler);
+      }
+
+      // Create new handler
+      editorKeydownHandler = function(e) {
+        // Ctrl+Z for Undo
+        if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undoEditor();
+          return;
+        }
+        // Ctrl+Y or Ctrl+Shift+Z for Redo
+        else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+          e.preventDefault();
+          redoEditor();
+          return;
+        }
+        // Ctrl+B for Bold
+        else if (e.ctrlKey && e.key === 'b') {
+          e.preventDefault();
+          saveToHistory();
+          formatText('bold');
+        }
+        // Ctrl+I for Italic
+        else if (e.ctrlKey && e.key === 'i') {
+          e.preventDefault();
+          saveToHistory();
+          formatText('italic');
+        }
+        // Ctrl+U for Underline
+        else if (e.ctrlKey && e.key === 'u') {
+          e.preventDefault();
+          saveToHistory();
+          formatText('underline');
+        }
+        // Ctrl+Shift+S for Strikethrough (avoid conflict with save)
+        else if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+          e.preventDefault();
+          saveToHistory();
+          formatText('strikethrough');
+        }
+      };
+
+      // Add new listener
+      contentTextarea.addEventListener('keydown', editorKeydownHandler);
+
+      // Save to history on input (with debounce)
+      let inputTimeout;
+      contentTextarea.addEventListener('input', function() {
+        if (isUndoRedo) return;
+        clearTimeout(inputTimeout);
+        inputTimeout = setTimeout(() => {
+          saveToHistory();
+        }, 500); // Debounce 500ms
+      });
+    }
+
+    // Format text with history (for button clicks)
+    function formatTextWithHistory(type) {
+      saveToHistory();
+      formatText(type);
+    }
+
+    // Format text in textarea
+    function formatText(type) {
+      const textarea = document.getElementById('content');
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = textarea.value.substring(start, end);
+      const beforeText = textarea.value.substring(0, start);
+      const afterText = textarea.value.substring(end);
+
+      let formattedText = '';
+      let newCursorPos = start;
+
+      switch(type) {
+        case 'bold':
+          if (selectedText) {
+            formattedText = `**${selectedText}**`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '****';
+            newCursorPos = start + 2;
+          }
+          break;
+        case 'italic':
+          if (selectedText) {
+            formattedText = `*${selectedText}*`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '**';
+            newCursorPos = start + 1;
+          }
+          break;
+        case 'underline':
+          if (selectedText) {
+            formattedText = `<u>${selectedText}</u>`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '<u></u>';
+            newCursorPos = start + 3;
+          }
+          break;
+        case 'strikethrough':
+          if (selectedText) {
+            formattedText = `~~${selectedText}~~`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '~~~~';
+            newCursorPos = start + 2;
+          }
+          break;
+        case 'h1':
+          if (selectedText) {
+            formattedText = `# ${selectedText}`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '# ';
+            newCursorPos = start + formattedText.length;
+          }
+          break;
+        case 'h2':
+          if (selectedText) {
+            formattedText = `## ${selectedText}`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '## ';
+            newCursorPos = start + formattedText.length;
+          }
+          break;
+        case 'h3':
+          if (selectedText) {
+            formattedText = `### ${selectedText}`;
+            newCursorPos = start + formattedText.length;
+          } else {
+            formattedText = '### ';
+            newCursorPos = start + formattedText.length;
+          }
+          break;
+      }
+
+      textarea.value = beforeText + formattedText + afterText;
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      
+      // Save new state to history after formatting
+      if (!isUndoRedo) {
+        // Update the last history entry with the new formatted state
+        if (editorHistory.length > 0 && historyIndex >= 0) {
+          editorHistory[historyIndex] = {
+            value: textarea.value,
+            selection: { start: newCursorPos, end: newCursorPos }
+          };
+        }
+      }
+    }
+
+    // Switch tab
+    function switchTab(tab) {
+      currentTab = tab;
+      editingDocId = null;
+      viewingDocId = null;
+      
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      document.getElementById('menu-' + tab).classList.add('active');
+      
+      const titles = {
+        'diseases': '📋 Danh sách bài viết - Các bệnh',
+        'healthy': '📋 Danh sách bài viết - Sống khỏe'
+      };
+      document.getElementById('listTitle').textContent = titles[tab];
+      
+      showList();
+    }
+
+    // Show list view
+    function showList() {
+      currentView = 'list';
+      document.getElementById('listView').style.display = 'block';
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('formView').style.display = 'none';
+      loadArticles();
+    }
+
+    // Show add form
+    function showAddForm() {
+      currentView = 'form';
+      editingDocId = null;
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+      document.getElementById('formTitle').textContent = currentTab === 'diseases' 
+        ? '🪴 Đăng bài mới - Các bệnh' 
+        : '💚 Đăng bài mới - Sống khỏe';
+      
+      // Reset form
+      document.getElementById('imageUrl').value = '';
+      document.getElementById('title').value = '';
+      document.getElementById('subtitle').value = '';
+      document.getElementById('content').value = '';
+      document.getElementById('status').className = 'status';
+      document.getElementById('status').textContent = '';
+      
+      // Setup editor shortcuts and initialize history
+      setTimeout(() => {
+        initEditorHistory();
+        setupEditorShortcuts();
+      }, 100);
+    }
+
+    // Show edit form
+    function showEditForm(docId) {
+      currentView = 'form';
+      editingDocId = docId;
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+      document.getElementById('formTitle').textContent = '✏️ Sửa bài viết';
+      
+      // Load data
+      const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+      db.collection(collectionName).doc(docId).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('imageUrl').value = data.imageUrl || '';
+          document.getElementById('title').value = data.title || '';
+          document.getElementById('subtitle').value = data.subtitle || '';
+          document.getElementById('content').value = data.content || '';
+          
+          // Setup editor shortcuts and initialize history after loading data
+          setTimeout(() => {
+            initEditorHistory();
+            setupEditorShortcuts();
+          }, 100);
+        }
+      });
+    }
+
+    // Show detail view
+    function showDetail(docId) {
+      currentView = 'detail';
+      viewingDocId = docId;
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+      document.getElementById('formView').style.display = 'none';
+      
+      const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+      db.collection(collectionName).doc(docId).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const createdAt = data.createdAt ? data.createdAt.toDate().toLocaleString('vi-VN') : 'Chưa có';
+          
+          document.getElementById('detailContent').innerHTML = `
+            <img src="${data.imageUrl}" alt="${data.title}" class="detail-image" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+            <div class="detail-info">
+              <div class="detail-label">Tiêu đề lớn</div>
+              <div class="detail-value">${data.title || ''}</div>
+              
+              <div class="detail-label">Tiêu đề phụ</div>
+              <div class="detail-value">${data.subtitle || ''}</div>
+              
+              <div class="detail-label">Nội dung</div>
+              <div class="detail-value" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">${data.content || 'Chưa có nội dung'}</div>
+              
+              <div class="detail-label">Link ảnh</div>
+              <div class="detail-value"><a href="${data.imageUrl}" target="_blank">${data.imageUrl}</a></div>
+              
+              <div class="detail-label">Ngày tạo</div>
+              <div class="detail-value">${createdAt}</div>
+              
+              <div class="detail-label">Trạng thái</div>
+              <div class="detail-value">
+                <span class="article-badge ${data.isActive ? 'badge-active' : 'badge-inactive'}">
+                  ${data.isActive ? '✅ Đang hiển thị' : '❌ Đã ẩn'}
+                </span>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-warning" onclick="showEditForm('${docId}')">✏️ Sửa</button>
+              <button class="btn btn-secondary" onclick="toggleActive('${docId}', ${!data.isActive})">
+                ${data.isActive ? '👁️ Ẩn' : '👁️ Hiện'}
+              </button>
+              <button class="btn btn-danger" onclick="deleteDoc('${docId}')">🗑️ Xóa</button>
+            </div>
+          `;
+        }
+      });
+    }
+
+    // Load articles
+    function loadArticles() {
+      const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+      const listContainer = document.getElementById('articleList');
+      listContainer.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Đang tải...</div>';
+      
+      db.collection(collectionName)
+        .orderBy('createdAt', 'desc')
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            listContainer.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div>Chưa có bài viết nào</div>
+                <button class="btn btn-primary" onclick="showAddForm()" style="margin-top: 20px;">➕ Đăng bài đầu tiên</button>
+              </div>
+            `;
+            return;
+          }
+          
+          let html = '';
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate().toLocaleString('vi-VN') : 'Chưa có';
+            const isActive = data.isActive !== false;
+            
+            html += `
+              <div class="article-item ${!isActive ? 'inactive' : ''}" onclick="showDetail('${doc.id}')">
+                <img src="${data.imageUrl}" alt="${data.title}" class="article-thumb" onerror="this.src='https://via.placeholder.com/120x120?text=No+Image'">
+                <div class="article-info">
+                  <div class="article-title">${data.title || 'Không có tiêu đề'}</div>
+                  <div class="article-subtitle">${data.subtitle || ''}</div>
+                  <div class="article-meta">📅 ${createdAt}</div>
+                  <span class="article-badge ${isActive ? 'badge-active' : 'badge-inactive'}">
+                    ${isActive ? '✅ Đang hiển thị' : '❌ Đã ẩn'}
+                  </span>
+                </div>
+              </div>
+            `;
+          });
+          listContainer.innerHTML = html;
+        })
+        .catch(error => {
+          listContainer.innerHTML = `<div class="status error">❌ Lỗi: ${error.message}</div>`;
+        });
+    }
+
+    // Save document (add or update)
+    async function saveDoc() {
+      const submitBtn = document.getElementById('submitBtn');
+      const status = document.getElementById('status');
+      const imageUrl = document.getElementById('imageUrl').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const subtitle = document.getElementById('subtitle').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      if (!imageUrl || !title || !subtitle || !content) {
+        status.className = 'status error';
+        status.textContent = '❌ Vui lòng điền đầy đủ các trường bắt buộc!';
+        return;
+      }
+
+      try {
+        new URL(imageUrl);
+      } catch (e) {
+        status.className = 'status error';
+        status.textContent = '❌ Link ảnh không hợp lệ!';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Đang lưu...';
+
+      try {
+        const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+        
+        if (editingDocId) {
+          // Update
+          await db.collection(collectionName).doc(editingDocId).update({
+            imageUrl: imageUrl,
+            title: title,
+            subtitle: subtitle,
+            content: content
+          });
+          status.className = 'status success';
+          status.textContent = '✅ Đã cập nhật bài viết thành công!';
+        } else {
+          // Add new
+          await db.collection(collectionName).add({
+            imageUrl: imageUrl,
+            title: title,
+            subtitle: subtitle,
+            content: content,
+            isActive: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          status.className = 'status success';
+          status.textContent = '✅ Đã đăng bài thành công!';
+        }
+
+        setTimeout(() => {
+          showList();
+        }, 1500);
+
+      } catch (error) {
+        console.error('Error:', error);
+        status.className = 'status error';
+        status.textContent = '❌ Lỗi: ' + error.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✅ Lưu bài viết';
+      }
+    }
+
+    // Toggle active/inactive
+    async function toggleActive(docId, newStatus) {
+      if (!confirm(newStatus ? 'Bạn có chắc muốn hiển thị bài viết này?' : 'Bạn có chắc muốn ẩn bài viết này?')) {
+        return;
+      }
+
+      try {
+        const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+        await db.collection(collectionName).doc(docId).update({
+          isActive: newStatus
+        });
+        showDetail(docId);
+      } catch (error) {
+        alert('❌ Lỗi: ' + error.message);
+      }
+    }
+
+    // Delete document
+    async function deleteDoc(docId) {
+      if (!confirm('⚠️ Bạn có chắc chắn muốn XÓA bài viết này? Hành động này không thể hoàn tác!')) {
+        return;
+      }
+
+      try {
+        const collectionName = currentTab === 'diseases' ? 'diseases' : 'healthy';
+        await db.collection(collectionName).doc(docId).delete();
+        showList();
+      } catch (error) {
+        alert('❌ Lỗi: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

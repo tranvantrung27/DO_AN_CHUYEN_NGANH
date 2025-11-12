@@ -8,6 +8,7 @@ class ArticleCard extends StatelessWidget {
   final String imageUrl;
   final String dateText; // e.g., "Thứ hai, 15/9/2025, 13:33 (GMT+7)"
   final String title;
+  final String subtitle; // Tiêu đề phụ
   final String sourceName; // e.g., "VnExpress"
   final String sourceAvatarUrl;
   final String timeAgo; // e.g., "4h ago"
@@ -20,6 +21,7 @@ class ArticleCard extends StatelessWidget {
     required this.imageUrl,
     required this.dateText,
     required this.title,
+    this.subtitle = '',
     required this.sourceName,
     required this.sourceAvatarUrl,
     required this.timeAgo,
@@ -85,99 +87,120 @@ class ArticleCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6.r),
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Thumbnail
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6.r),
-              child: SizedBox(
-                width: 96.w,
-                height: 96.w,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return CardLoading(
-                      height: 96.w,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6.r),
+                child: SizedBox(
+                  width: 96.w,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return CardLoading(
+                        height: double.infinity,
+                        borderRadius: BorderRadius.circular(6.r),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => CardLoading(
+                      height: double.infinity,
                       borderRadius: BorderRadius.circular(6.r),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) => CardLoading(
-                    height: 96.w,
-                    borderRadius: BorderRadius.circular(6.r),
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(width: 8.w),
-            // Right content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (showDateOnTop && dateText.isNotEmpty) ...[
-                    Text(
-                      dateText,
-                      style: TextStyle(
-                        color: const Color(0xFF4E4B66),
-                        fontSize: 13.sp,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w400,
-                        height: 1.50,
-                        letterSpacing: 0.12,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                  ],
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16.sp,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w400,
-                      height: 1.50,
-                      letterSpacing: 0.12,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Row(
-                    children: [
-                      // Source logo (SVG or PNG)
-                      SizedBox(
-                        height: 18.h,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 72.w,
-                              height: 18.h,
-                              child: sourceAvatarUrl.endsWith('.svg')
-                                  ? SvgPicture.network(
-                                      sourceAvatarUrl,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : Image.network(
-                                      sourceAvatarUrl,
-                                      fit: BoxFit.contain,
-                                      loadingBuilder: (context, child, progress) {
-                                        if (progress == null) return child;
-                                        return CardLoading(
-                                          height: 18.h,
-                                          width: 72.w,
-                                          borderRadius: BorderRadius.circular(4.r),
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ],
+              SizedBox(width: 8.w),
+              // Right content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showDateOnTop && dateText.isNotEmpty) ...[
+                      Text(
+                        dateText,
+                        style: TextStyle(
+                          color: const Color(0xFF4E4B66),
+                          fontSize: 13.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
+                          height: 1.50,
+                          letterSpacing: 0.12,
                         ),
                       ),
-                      SizedBox(width: 12.w),
+                      SizedBox(height: 4.h),
+                    ],
+                    // Tiêu đề lớn - hiển thị đầy đủ (không giới hạn dòng)
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
+                          height: 1.50,
+                          letterSpacing: 0.12,
+                        ),
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      // Tiêu đề nhỏ - chỉ 1 dòng với "..."
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: const Color(0xFF4E4B66),
+                          fontSize: 14.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
+                          height: 1.50,
+                          letterSpacing: 0.12,
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: 8.h),
+                  Row(
+                    children: [
+                      // Source logo (chỉ hiển thị nếu có sourceAvatarUrl)
+                      if (sourceAvatarUrl.isNotEmpty) ...[
+                        SizedBox(
+                          height: 18.h,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 72.w,
+                                height: 18.h,
+                                child: sourceAvatarUrl.endsWith('.svg')
+                                    ? SvgPicture.network(
+                                        sourceAvatarUrl,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : Image.network(
+                                        sourceAvatarUrl,
+                                        fit: BoxFit.contain,
+                                        loadingBuilder: (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return CardLoading(
+                                            height: 18.h,
+                                            width: 72.w,
+                                            borderRadius: BorderRadius.circular(4.r),
+                                          );
+                                        },
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                      ],
                       // time ago
                       Text(
                         timeAgo,
@@ -199,10 +222,11 @@ class ArticleCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

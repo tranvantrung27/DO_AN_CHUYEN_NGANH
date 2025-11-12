@@ -6,6 +6,7 @@ import '../../widgets/cards/article_card.dart';
 import 'tabs/news_tab.dart';
 import 'tabs/diseases_tab.dart';
 import 'tabs/healthy_tab.dart';
+import '../notification/notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,25 +55,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      Container(
-                        width: 42.w,
-                        height: 42.h,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0x19000000),
-                              blurRadius: 10,
-                              offset: const Offset(0, 0),
-                              spreadRadius: 0,
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationScreen(),
                             ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/icons/notice.png',
-                          width: 40.w,
-                          height: 40.h,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(6.r),
+                        child: Container(
+                          width: 42.w,
+                          height: 42.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0x19000000),
+                                blurRadius: 10,
+                                offset: const Offset(0, 0),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/icons/notice.png',
+                            width: 40.w,
+                            height: 40.h,
+                          ),
                         ),
                       ),
                     ],
@@ -149,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         imageUrl: '',
                         dateText: '',
                         title: '',
+                        subtitle: '',
                         sourceName: '',
                         sourceAvatarUrl: '',
                         timeAgo: '',

@@ -3,3 +3,4 @@
 
 export 'auth_service.dart';
 export 'notification_service.dart';
+export 'DiseasesTab/disease_service.dart';

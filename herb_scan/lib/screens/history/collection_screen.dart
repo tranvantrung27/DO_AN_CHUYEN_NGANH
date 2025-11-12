@@ -1,55 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../constants/app_colors.dart';
-import '../../widgets/history_tab_navigation.dart';
-import 'collection_screen.dart';
 
-class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
-
-  @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  int _selectedTab = 0; // 0: Lịch sử (trang chính), 1: Bộ sưu tầm
+class CollectionScreen extends StatelessWidget {
+  const CollectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundCream,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Tab Navigation
-            Positioned(
-              left: 75.w,
-              top: 80.h,
-              child: HistoryTabNavigation(
-                selectedTab: _selectedTab,
-                onTabChanged: (index) {
-                  setState(() {
-                    _selectedTab = index;
-                  });
-                },
-              ),
-            ),
-            
-            // Content based on selected tab
-            // Tab 0: Lịch sử (trang chính) - hiển thị khi mở màn hình
-            // Tab 1: Bộ sưu tầm - chuyển qua khi tap tab
-            Positioned(
-              left: 0,
-              top: 150.h,
-              child: _selectedTab == 0 ? _buildHistoryContent() : const CollectionScreen(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryContent() {
     return Container(
       width: 430.w,
       height: 782.h,
@@ -65,10 +22,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               width: 330.w,
               height: 330.h,
               child: Image.asset(
-                "assets/icons/history.png",
+                "assets/icons/collection.png",
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                  print('Error loading history image: $error');
+                  print('Error loading collection image: $error');
                   return Container(
                     width: 330.w,
                     height: 330.h,
@@ -77,7 +34,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.history,
+                      Icons.collections_bookmark,
                       size: 100,
                       color: Colors.grey[600],
                     ),
@@ -92,7 +49,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             left: 52.w,
             top: 460.h,
             child: Text(
-              'Lịch sử chưa được ghi nhận',
+              'Bộ sưu tập lá thuốc trống rỗng',
               style: TextStyle(
                 color: const Color(0xFF3B7254),
                 fontSize: 24.sp,
@@ -108,7 +65,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             left: 51.w,
             top: 500.h,
             child: Text(
-              'Hãy bắt đầu khám phá \nđể theo dõi các hoạt động của bạn.',
+              'Hãy ghi lại những lá thuốc quý giá \nvà hữu ích cho bạn!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: const Color(0xFF3B7254),
