@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/content_navigation_bar.dart';
 import '../../widgets/cards/article_card.dart';
+import '../../services/notification/notification_badge_service.dart';
 import 'tabs/news_tab.dart';
 import 'tabs/diseases_tab.dart';
 import 'tabs/healthy_tab.dart';
@@ -57,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       InkWell(
                         onTap: () {
+                          // KHÔNG markAsViewed ở đây - chỉ mark khi user thực sự đọc
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -65,26 +67,70 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                         borderRadius: BorderRadius.circular(6.r),
-                        child: Container(
-                          width: 42.w,
-                          height: 42.h,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0x19000000),
-                                blurRadius: 10,
-                                offset: const Offset(0, 0),
-                                spreadRadius: 0,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 42.w,
+                              height: 42.h,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0x19000000),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 0),
+                                    spreadRadius: 0,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Image.asset(
-                            'assets/icons/notice.png',
-                            width: 40.w,
-                            height: 40.h,
-                          ),
+                              child: Image.asset(
+                                'assets/icons/notice.png',
+                                width: 40.w,
+                                height: 40.h,
+                              ),
+                            ),
+                            // Badge hiển thị số bài mới
+                            StreamBuilder<int>(
+                              stream: NotificationBadgeService.watchNewArticlesCount(),
+                              initialData: 0,
+                              builder: (context, snapshot) {
+                                final count = snapshot.data ?? 0;
+                                if (count <= 0) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Positioned(
+                                  right: -4.w,
+                                  top: -4.h,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: count > 9 ? 4.w : 6.w,
+                                      vertical: 2.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(count > 9 ? 8.r : 20.r),
+                                    ),
+                                    constraints: BoxConstraints(
+                                      minWidth: 16.w,
+                                      minHeight: 16.h,
+                                    ),
+                                    child: Text(
+                                      count > 99 ? '99+' : count.toString(),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10.sp,
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ],
