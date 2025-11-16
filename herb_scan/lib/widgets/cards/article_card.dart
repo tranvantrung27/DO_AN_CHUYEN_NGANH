@@ -16,6 +16,9 @@ class ArticleCard extends StatelessWidget {
   final bool isLoading;
   final bool showDateOnTop;
 
+  // Chiều cao cố định cho card để đảm bảo tất cả card có cùng chiều cao
+  static const double cardHeight = 140.0;
+
   const ArticleCard({
     super.key,
     required this.imageUrl,
@@ -34,6 +37,7 @@ class ArticleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Container(
+        height: cardHeight.h,
         padding: EdgeInsets.all(8.w),
         decoration: ShapeDecoration(
           color: Colors.white,
@@ -80,6 +84,7 @@ class ArticleCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(6.r),
       child: Container(
+        height: cardHeight.h,
         padding: EdgeInsets.all(8.w),
         decoration: ShapeDecoration(
           color: Colors.white,
@@ -87,88 +92,98 @@ class ArticleCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6.r),
           ),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6.r),
-                child: SizedBox(
-                  width: 96.w,
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return CardLoading(
-                        height: double.infinity,
-                        borderRadius: BorderRadius.circular(6.r),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => CardLoading(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6.r),
+              child: SizedBox(
+                width: 96.w,
+                height: double.infinity,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return CardLoading(
                       height: double.infinity,
                       borderRadius: BorderRadius.circular(6.r),
-                    ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => CardLoading(
+                    height: double.infinity,
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
                 ),
               ),
-              SizedBox(width: 8.w),
-              // Right content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (showDateOnTop && dateText.isNotEmpty) ...[
-                      Text(
-                        dateText,
-                        style: TextStyle(
-                          color: const Color(0xFF4E4B66),
-                          fontSize: 13.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                          letterSpacing: 0.12,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                    ],
-                    // Tiêu đề lớn - hiển thị đầy đủ (không giới hạn dòng)
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                          letterSpacing: 0.12,
-                        ),
+            ),
+            SizedBox(width: 8.w),
+            // Right content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dòng 1: Thời gian
+                  if (dateText.isNotEmpty)
+                    Text(
+                      dateText,
+                      style: TextStyle(
+                        color: const Color(0xFF4E4B66),
+                        fontSize: 13.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        height: 1.50,
+                        letterSpacing: 0.12,
                       ),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      SizedBox(height: 4.h),
-                      // Tiêu đề nhỏ - chỉ 1 dòng với "..."
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: const Color(0xFF4E4B66),
-                          fontSize: 14.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                          letterSpacing: 0.12,
+                  SizedBox(height: 4.h),
+                  // Dòng 2: Tiêu đề chính - có thể nhiều dòng, hiển thị "..." khi dài
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SizedBox(
+                        width: constraints.maxWidth,
+                        child: Text(
+                          title,
+                          maxLines: 3, // Cho phép tối đa 3 dòng
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            height: 1.50,
+                            letterSpacing: 0.12,
+                          ),
                         ),
+                      );
+                    },
+                  ),
+                  // Dòng 3: Tiêu đề phụ (chỉ hiển thị nếu có)
+                  if (subtitle.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFF4E4B66),
+                        fontSize: 14.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        height: 1.50,
+                        letterSpacing: 0.12,
                       ),
-                    ],
-                    SizedBox(height: 8.h),
+                    ),
+                  ],
+                  // Spacer để đẩy phần dưới xuống
+                  Expanded(child: Container()),
+                  // Dòng 4: Logo | Thời gian đăng
                   Row(
                     children: [
-                      // Source logo (chỉ hiển thị nếu có sourceAvatarUrl)
+                      // Logo (chỉ hiển thị nếu có sourceAvatarUrl - trang tin tức)
                       if (sourceAvatarUrl.isNotEmpty) ...[
                         SizedBox(
                           height: 18.h,
@@ -199,34 +214,26 @@ class ArticleCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(width: 12.w),
                       ],
-                      // time ago
-                      Text(
-                        timeAgo,
-                        style: TextStyle(
-                          color: const Color(0xFF4E4B66),
-                          fontSize: 13.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                          letterSpacing: 0.12,
+                      // Thời gian đăng (hiển thị nếu có timeAgo và không có logo - trang các bệnh và sống khỏe)
+                      if (timeAgo.isNotEmpty && sourceAvatarUrl.isEmpty)
+                        Text(
+                          timeAgo,
+                          style: TextStyle(
+                            color: const Color(0xFF4E4B66),
+                            fontSize: 13.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            height: 1.50,
+                            letterSpacing: 0.12,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      // trailing placeholder
-                      SizedBox(
-                        width: 14.w,
-                        height: 14.w,
-                        child: const SizedBox.shrink(),
-                      ),
                     ],
                   ),
-                  ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

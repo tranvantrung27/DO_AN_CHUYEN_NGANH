@@ -29,10 +29,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isLoading = true);
     try {
       final articles = await NotificationBadgeService.getNewArticles();
-      final readIds = await NotificationBadgeService.getReadArticleIds();
+      // Lấy danh sách bài đã đọc (dạng key "collection:id") để hiển thị mờ
+      final readKeys = await NotificationBadgeService.getReadArticleIds();
       setState(() {
         _allNotifications = articles.map((map) {
-          final isRead = readIds.contains(map['id']);
+          final key = '${map['collection']}:${map['id']}';
+          final isRead = readKeys.contains(key);
           return NotificationItem.fromMap(map, isRead: isRead);
         }).toList();
         _isLoading = false;
@@ -44,21 +46,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _markAllAsRead() async {
-    // Đánh dấu tất cả bài hiện tại đã đọc (chỉ những bài đang hiển thị)
-    final filteredNotifications = _getFilteredNotifications();
-    final articleIds = filteredNotifications.map((n) => n.id).toList();
-    await NotificationBadgeService.markAllCurrentArticlesAsRead(articleIds);
+    // Đánh dấu tất cả bài hiện tại đã đọc (tất cả bài đang có trong danh sách)
+    final articleKeys = _allNotifications
+        .map((n) => {'collection': n.collection, 'id': n.id})
+        .map((e) => '${e['collection']}:${e['id']}' )
+        .toList();
+    
+    if (articleKeys.isEmpty) return;
+    
+    // Đánh dấu tất cả bài đã đọc trong Firestore
+    await NotificationBadgeService.markAllCurrentArticlesAsReadKeys(articleKeys);
+    // Cập nhật thời điểm xem cuối cùng
     await NotificationBadgeService.markAllAsRead();
     
     // Cập nhật UI - làm mờ tất cả card
     setState(() {
-      _allNotifications = _allNotifications.map((n) {
-        if (articleIds.contains(n.id)) {
-          return n.copyWith(isRead: true);
-        }
-        return n;
-      }).toList();
+      _allNotifications = _allNotifications.map((n) => n.copyWith(isRead: true)).toList();
     });
+    
+    // Reload để đảm bảo đồng bộ với Firestore
+    await _loadNotifications();
   }
 
   /// Lọc notifications theo tab hiện tại
@@ -76,8 +83,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _onNotificationTap(NotificationItem item) async {
-    // Đánh dấu bài này đã đọc
-    await NotificationBadgeService.markArticleAsRead(item.id);
+    // Nếu chưa đọc, đánh dấu đã đọc ngay lập tức
+    if (!item.isRead) {
+      await NotificationBadgeService.markArticleAsRead(item.collection, item.id);
+      
+      // Cập nhật UI ngay lập tức để card bị mờ đi
+      if (mounted) {
+        setState(() {
+          _allNotifications = _allNotifications.map((n) {
+            if (n.id == item.id) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList();
+        });
+      }
+    }
     
     // Navigate to detail screen
     if (mounted) {
@@ -90,7 +111,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
       );
       
-      // Sau khi quay lại, reload danh sách để cập nhật isRead
+      // Sau khi quay lại, reload danh sách để đảm bảo đồng bộ với Firestore
       _loadNotifications();
     }
   }
@@ -227,26 +248,76 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildNotificationsList() {
-    final filteredNotifications = _getFilteredNotifications();
+    final filtered = _getFilteredNotifications();
+    // Nhóm theo ngày (Thứ x, dd/MM)
+    final Map<String, List<NotificationItem>> grouped = {};
+    for (final item in filtered) {
+      final key = _formatHeaderDate(item.createdAt);
+      grouped.putIfAbsent(key, () => []).add(item);
+    }
+
+    final headers = grouped.keys.toList();
+
+    // Tạo danh sách hiển thị: header + items
+    final List<Widget> children = [];
+    for (final header in headers) {
+      children.add(Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+        child: Text(
+          header,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 13.sp,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ));
+
+      final items = grouped[header]!;
+      for (final n in items) {
+        children.add(Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          child: NotificationCard(
+            imageUrl: n.imageUrl,
+            title: n.title,
+            createdAt: n.createdAt,
+            isRead: n.isRead,
+            onTap: () => _onNotificationTap(n),
+            showBottomDivider: true,
+          ),
+        ));
+      }
+      // Khoảng cách giữa các nhóm
+      children.add(SizedBox(height: 12.h));
+    }
+
     return RefreshIndicator(
       onRefresh: _loadNotifications,
       color: AppColors.primaryGreen,
-      child: ListView.separated(
-        padding: EdgeInsets.all(16.w),
-        itemCount: filteredNotifications.length,
-        separatorBuilder: (_, __) => SizedBox(height: 12.h),
-        itemBuilder: (context, index) {
-          final notification = filteredNotifications[index];
-          return NotificationCard(
-            imageUrl: notification.imageUrl,
-            title: notification.title,
-            createdAt: notification.createdAt,
-            isRead: notification.isRead,
-            onTap: () => _onNotificationTap(notification),
-          );
-        },
+      child: ListView(
+        padding: EdgeInsets.only(top: 8.h, bottom: 16.h),
+        children: children,
       ),
     );
+  }
+
+  String _formatHeaderDate(DateTime? dt) {
+    if (dt == null) return '';
+    final d = dt.toLocal();
+    const days = [
+      'Chủ nhật',
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+    ];
+    final label = days[d.weekday % 7];
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    return '$label, $dd/$mm';
   }
 }
 

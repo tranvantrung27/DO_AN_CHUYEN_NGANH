@@ -7,7 +7,7 @@ import '../../widgets/common/social_login_button.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
 import '../../models/index.dart';
-import '../home/home_screen.dart';
+import '../main_navigation_screen.dart';
 import 'otp_verification_screen.dart';
 
 /// Màn hình đăng ký
@@ -347,7 +347,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
         throw Exception(result.errorMessage);
@@ -365,7 +365,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
         throw Exception(result.errorMessage);

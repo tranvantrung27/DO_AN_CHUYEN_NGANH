@@ -8,7 +8,7 @@ import '../../services/index.dart';
 import '../../models/index.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-import '../home/home_screen.dart';
+import '../main_navigation_screen.dart';
 
 /// Màn hình đăng nhập
 class LoginScreen extends StatefulWidget {
@@ -316,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
         print('🔍 Login error: ${result.errorMessage}');
@@ -338,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
         throw Exception(result.errorMessage);

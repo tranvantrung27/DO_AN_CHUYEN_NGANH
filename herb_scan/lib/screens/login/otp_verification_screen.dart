@@ -6,7 +6,7 @@ import '../../widgets/index.dart';
 import '../../widgets/common/otp_input_widget.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
-import '../home/home_screen.dart';
+import '../main_navigation_screen.dart';
 
 /// Màn hình xác thực OTP
 class OTPVerificationScreen extends StatefulWidget {
@@ -305,7 +305,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
         throw Exception(result.errorMessage);

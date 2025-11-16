@@ -10,6 +10,7 @@ class NotificationCard extends StatelessWidget {
   final DateTime? createdAt;
   final bool isRead; // Đã đọc chưa
   final VoidCallback? onTap;
+  final bool showBottomDivider;
 
   const NotificationCard({
     super.key,
@@ -18,6 +19,7 @@ class NotificationCard extends StatelessWidget {
     this.createdAt,
     this.isRead = false,
     this.onTap,
+    this.showBottomDivider = true,
   });
 
   String _formatDateTime(DateTime? dateTime) {
@@ -36,103 +38,101 @@ class NotificationCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(6.r),
-        child: Container(
-          padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6.r),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x19000000),
-                blurRadius: 10,
-                offset: const Offset(0, 0),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            // Ảnh bên trái
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6.r),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                width: 96.w,
-                height: 96.w,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => CardLoading(
-                  height: 96.w,
-                  width: 96.w,
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  width: 96.w,
-                  height: 96.w,
-                  color: const Color(0xFFC4C4C4),
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                    size: 32,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            // Nội dung bên phải
-            Expanded(
-              child: Column(
+            Padding(
+              padding: EdgeInsets.all(8.w),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Ngày giờ đăng (mép trái)
-                  Text(
-                    _formatDateTime(createdAt),
-                    style: TextStyle(
-                      color: const Color(0xFFA0A3BD),
-                      fontSize: 12.sp,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w400,
-                      height: 1.50,
-                      letterSpacing: 0.12,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  // Tiêu đề chính
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 14.sp,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      height: 1.50,
-                      letterSpacing: 0.12,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 8.h),
-                  // Xem chi tiết (gạch chân)
-                  GestureDetector(
-                    onTap: onTap,
-                    child: Text(
-                      'Xem chi tiết',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 12.sp,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w400,
-                        height: 1.50,
-                        letterSpacing: 0.12,
-                        decoration: TextDecoration.underline,
+                  // Ảnh bên trái
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6.r),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 96.w,
+                      height: 96.w,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => CardLoading(
+                        height: 96.w,
+                        width: 96.w,
+                        borderRadius: BorderRadius.circular(6.r),
                       ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 96.w,
+                        height: 96.w,
+                        color: const Color(0xFFC4C4C4),
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  // Nội dung bên phải
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Ngày giờ đăng (mép trái)
+                        Text(
+                          _formatDateTime(createdAt),
+                          style: TextStyle(
+                            color: const Color(0xFFA0A3BD),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            height: 1.50,
+                            letterSpacing: 0.12,
+                          ),
+                        ),
+                        SizedBox(height: 6.h),
+                        // Tiêu đề chính
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            height: 1.50,
+                            letterSpacing: 0.12,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 6.h),
+                        // Xem chi tiết (gạch chân)
+                        GestureDetector(
+                          onTap: onTap,
+                          child: Text(
+                            'Xem chi tiết',
+                            style: TextStyle(
+                              color: const Color(0xFF4E4B66),
+                              fontSize: 13.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
+                              height: 1.50,
+                              letterSpacing: 0.12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+            if (showBottomDivider)
+              Container(
+                margin: EdgeInsets.only(left: 8.w, right: 8.w),
+                height: 1,
+                color: const Color(0xFF676767),
+              ),
           ],
-        ),
         ),
       ),
     );
