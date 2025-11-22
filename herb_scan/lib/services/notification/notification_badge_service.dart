@@ -46,9 +46,13 @@ class NotificationBadgeService {
       final timestamp = data?['lastNotificationViewedTime'] as Timestamp?;
       return timestamp?.toDate();
     } catch (e) {
-      print('❌ Error getting last viewed time: $e');
       return null;
     }
+  }
+
+  /// Lấy thời điểm user xem notification lần cuối (public method)
+  static Future<DateTime?> getLastViewedTime() async {
+    return await _getLastViewedTime();
   }
 
   /// Lưu thời điểm user xem notification (hiện tại) vào Firestore
@@ -69,7 +73,7 @@ class NotificationBadgeService {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      print('❌ Error saving last viewed time: $e');
+      // Ignore
     }
   }
 
@@ -95,24 +99,26 @@ class NotificationBadgeService {
             .where('isActive', isEqualTo: true)
             .get();
 
+        int diseasesCount = 0;
         for (var doc in diseasesQuery.docs) {
           final articleId = doc.id;
           final data = doc.data();
           final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+          final key = _composeKey('diseases', articleId);
           
           // Bỏ qua nếu đã đọc
-          if (readIds.contains(_composeKey('diseases', articleId))) {
+          if (readIds.contains(key)) {
             continue;
           }
           
           // Nếu chưa từng xem, đếm tất cả bài active
           // Nếu đã xem, chỉ đếm bài mới sau lần xem cuối
           if (lastViewed == null || (createdAt != null && createdAt.isAfter(lastViewed))) {
-            count++;
+            diseasesCount++;
           }
         }
+        count += diseasesCount;
       } catch (e) {
-        print('⚠️ Error reading diseases collection: $e');
         // Tiếp tục đếm từ healthy nếu có lỗi
       }
 
@@ -123,30 +129,31 @@ class NotificationBadgeService {
             .where('isActive', isEqualTo: true)
             .get();
 
+        int healthyCount = 0;
         for (var doc in healthyQuery.docs) {
           final articleId = doc.id;
           final data = doc.data();
           final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+          final key = _composeKey('healthy', articleId);
           
           // Bỏ qua nếu đã đọc
-          if (readIds.contains(_composeKey('healthy', articleId))) {
+          if (readIds.contains(key)) {
             continue;
           }
           
           // Nếu chưa từng xem, đếm tất cả bài active
           // Nếu đã xem, chỉ đếm bài mới sau lần xem cuối
           if (lastViewed == null || (createdAt != null && createdAt.isAfter(lastViewed))) {
-            count++;
+            healthyCount++;
           }
         }
+        count += healthyCount;
       } catch (e) {
-        print('⚠️ Error reading healthy collection: $e');
         // Nếu lỗi permission, chỉ đếm từ diseases
       }
 
       return count;
     } catch (e) {
-      print('❌ Error getting new articles count: $e');
       return 0;
     }
   }
@@ -155,25 +162,43 @@ class NotificationBadgeService {
   /// Tự động restart khi user đổi (listen vào auth state changes)
   /// Sử dụng distinct() để chỉ emit khi giá trị thay đổi
   static Stream<int> watchNewArticlesCount() {
-    // Listen vào auth state changes để restart stream khi user đổi
-    return _auth.authStateChanges().asyncExpand((user) async* {
-      // Emit giá trị ngay lập tức khi user đổi hoặc stream start
+    // Tạo stream: emit giá trị ban đầu ngay lập tức nếu có user
+    final initialUser = _auth.currentUser;
+    Stream<int> initialStream;
+    if (initialUser != null) {
+      initialStream = Stream.fromFuture(getNewArticlesCount().catchError((e) {
+        return 0;
+      }));
+    } else {
+      initialStream = Stream.value(0);
+    }
+    
+    // Kết hợp với stream từ auth changes
+    final authStream = _auth.authStateChanges()
+        .where((user) => user != null)
+        .asyncExpand((user) async* {
+      // Emit giá trị ngay lập tức khi user đổi
       try {
-        yield await getNewArticlesCount();
+        final count = await getNewArticlesCount();
+        yield count;
       } catch (e) {
-        print('⚠️ Stream error: $e');
         yield 0;
       }
       
       // Sau đó poll định kỳ mỗi 2 giây
       await for (final _ in Stream.periodic(const Duration(seconds: 2))) {
         try {
-          yield await getNewArticlesCount();
+          final count = await getNewArticlesCount();
+          yield count;
         } catch (e) {
-          print('⚠️ Stream error: $e');
           yield 0;
         }
       }
+    });
+    
+    // Kết hợp initial stream với auth stream
+    return initialStream.asyncExpand((initialCount) {
+      return Stream.value(initialCount).asyncExpand((_) => authStream);
     }).distinct();
   }
 
@@ -186,9 +211,6 @@ class NotificationBadgeService {
   static Future<void> markArticleAsRead(String collection, String articleId) async {
     try {
       final docRef = _userPrefsDoc;
-      if (docRef == null) {
-        print('⚠️ No user logged in, cannot save read article to remote; using local only');
-      }
       
       final key = _composeKey(collection, articleId);
 
@@ -208,7 +230,7 @@ class NotificationBadgeService {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      print('❌ Error saving read article: $e');
+      // Ignore
     }
   }
 
@@ -232,7 +254,7 @@ class NotificationBadgeService {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      print('❌ Error saving read articles: $e');
+      // Ignore
     }
   }
 
@@ -249,7 +271,6 @@ class NotificationBadgeService {
       final readIds = (data?['readArticleIds'] as List<dynamic>?)?.cast<String>() ?? [];
       return readIds.contains(_composeKey(collection, articleId));
     } catch (e) {
-      print('❌ Error checking read article: $e');
       return false;
     }
   }
@@ -273,7 +294,6 @@ class NotificationBadgeService {
       // Hợp nhất remote và local
       return {...local, ...remote}.toList();
     } catch (e) {
-      print('❌ Error getting read articles: $e');
       final prefs = await SharedPreferences.getInstance();
       return prefs.getStringList(_prefsKey('read_articles_ids')) ?? [];
     }
@@ -309,7 +329,7 @@ class NotificationBadgeService {
           });
         }
       } catch (e) {
-        print('⚠️ Error reading diseases collection: $e');
+        // Ignore
       }
 
       // Lấy bài mới từ healthy collection
@@ -334,7 +354,7 @@ class NotificationBadgeService {
           });
         }
       } catch (e) {
-        print('⚠️ Error reading healthy collection: $e');
+        // Ignore
       }
 
       // Sắp xếp theo createdAt giảm dần (mới nhất trước)
@@ -346,7 +366,6 @@ class NotificationBadgeService {
 
       return articles;
     } catch (e) {
-      print('❌ Error getting new articles: $e');
       return [];
     }
   }

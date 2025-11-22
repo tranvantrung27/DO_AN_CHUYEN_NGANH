@@ -109,6 +109,25 @@ class _DiseasesTabState extends State<DiseasesTab> {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemBuilder: (context, index) {
+              // Hiển thị message ở cuối danh sách
+              if (index == diseases.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Bạn đã xem hết bài viết.\nChúng tôi sẽ sớm cập nhật các bài viết mới',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
               final disease = diseases[index];
               return ArticleCard(
                 isLoading: false,
@@ -131,8 +150,14 @@ class _DiseasesTabState extends State<DiseasesTab> {
                 },
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemCount: diseases.length,
+            separatorBuilder: (_, index) {
+              // Không hiển thị separator sau item cuối cùng (message)
+              if (index == diseases.length - 1) {
+                return const SizedBox.shrink();
+              }
+              return const SizedBox(height: 12);
+            },
+            itemCount: diseases.length + 1, // +1 cho message ở cuối
           );
         },
       ),

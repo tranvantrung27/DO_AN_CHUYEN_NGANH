@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/app_colors.dart';
 import '../../services/index.dart';
 import '../login/login_screen.dart';
@@ -106,23 +107,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (shouldLogout == true) {
       try {
-        await _authService.signOut();
+        // Clear SharedPreferences để xóa toàn bộ dữ liệu local
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          print('✅ Cleared SharedPreferences');
+        } catch (e) {
+          print('⚠️ Error clearing SharedPreferences: $e');
+        }
         
+        // Đăng xuất khỏi Firebase
+        await _authService.signOut();
+        print('✅ Signed out from Firebase');
+        
+        // Navigate về màn hình đăng nhập và clear toàn bộ navigation stack
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Đã đăng xuất thành công'),
-              backgroundColor: Colors.green,
-            ),
+            (route) => false, // Xóa tất cả routes trước đó
           );
         }
       } catch (e) {
+        print('❌ Error during logout: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

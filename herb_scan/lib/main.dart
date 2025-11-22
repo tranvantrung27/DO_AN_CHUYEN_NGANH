@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'constants/index.dart';
-import 'screens/main_navigation_screen.dart';
+import 'widgets/auth_wrapper.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -57,7 +57,7 @@ class _MainAppState extends State<MainApp> {
               Theme.of(context).textTheme,
             ),
           ),
-          home: const MainNavigationScreen(),
+          home: const AuthWrapper(),
           debugShowCheckedModeBanner: false,
           builder: (context, widget) {
             // Đảm bảo text scale không vượt quá 1.3

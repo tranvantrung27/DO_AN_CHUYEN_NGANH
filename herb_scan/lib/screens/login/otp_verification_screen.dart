@@ -6,17 +6,20 @@ import '../../widgets/index.dart';
 import '../../widgets/common/otp_input_widget.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
+import '../../models/index.dart';
 import '../main_navigation_screen.dart';
 
 /// Màn hình xác thực OTP
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
   final String verificationId;
+  final bool isLogin; // true nếu đăng nhập, false nếu đăng ký
 
   const OTPVerificationScreen({
     super.key,
     required this.phoneNumber,
     required this.verificationId,
+    this.isLogin = false, // Mặc định là đăng ký
   });
 
   @override
@@ -296,11 +299,22 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
     }
 
     await withLoadingAndErrorHandling(() async {
-      final result = await _authService.verifyPhoneOTP(
-        verificationId: widget.verificationId,
-        otp: _currentOTP,
-        displayName: widget.phoneNumber,
-      );
+      AuthResult result;
+      
+      if (widget.isLogin) {
+        // Đăng nhập: chỉ verify OTP và sign in
+        result = await _authService.verifyPhoneOTPForLogin(
+          verificationId: widget.verificationId,
+          otp: _currentOTP,
+        );
+      } else {
+        // Đăng ký: verify OTP và tạo tài khoản mới
+        result = await _authService.verifyPhoneOTP(
+          verificationId: widget.verificationId,
+          otp: _currentOTP,
+          displayName: widget.phoneNumber,
+        );
+      }
       
       if (result.isSuccess && mounted) {
         Navigator.pushReplacement(

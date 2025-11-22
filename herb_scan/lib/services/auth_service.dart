@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/index.dart';
 import 'notification/notification_service.dart';
+import 'notification/notification_badge_service.dart';
 
 /// Service xử lý authentication với Firebase
 class AuthService {
@@ -11,7 +12,15 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // Cấu hình Google Sign In với scopes để luôn hiển thị consent screen
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+    ],
+    // Force hiển thị account picker mỗi lần sign in
+    forceCodeForRefreshToken: true,
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Lấy user hiện tại
@@ -49,30 +58,38 @@ class AuthService {
   /// Kiểm tra số điện thoại đã được đăng ký chưa
   Future<bool> isPhoneNumberRegistered(String phoneNumber) async {
     try {
-      // Format phone number
-      String formattedPhone = phoneNumber;
-      if (phoneNumber.startsWith('0') && phoneNumber.length == 10) {
-        formattedPhone = '+84${phoneNumber.substring(1)}';
-      } else if (!phoneNumber.startsWith('+')) {
-        formattedPhone = '+84$phoneNumber';
+      // Format phone number - thử cả format +84 và format 0
+      String phoneWithoutPrefix = phoneNumber;
+      if (phoneNumber.startsWith('0')) {
+        phoneWithoutPrefix = phoneNumber.substring(1); // Bỏ số 0 đầu
+      } else if (phoneNumber.startsWith('+84')) {
+        phoneWithoutPrefix = phoneNumber.substring(3); // Bỏ +84
+      } else if (phoneNumber.startsWith('84')) {
+        phoneWithoutPrefix = phoneNumber.substring(2); // Bỏ 84
       }
+      
+      String formattedPhone1 = '+84$phoneWithoutPrefix'; // Format 1: +84334666030
+      String formattedPhone2 = '0$phoneWithoutPrefix';   // Format 2: 0334666030
 
-      print('🔍 Checking if phone $formattedPhone is registered...');
-
-      // Kiểm tra trong Firestore
-      final querySnapshot = await FirebaseFirestore.instance
+      // Kiểm tra format +84
+      final querySnapshot1 = await FirebaseFirestore.instance
           .collection('users')
-          .where('phoneNumber', isEqualTo: formattedPhone)
+          .where('phoneNumber', isEqualTo: formattedPhone1)
           .limit(1)
           .get();
 
-      final isInFirestore = querySnapshot.docs.isNotEmpty;
-      print('📊 Firestore check result: $isInFirestore');
+      // Kiểm tra format 0
+      final querySnapshot2 = await FirebaseFirestore.instance
+          .collection('users')
+          .where('phoneNumber', isEqualTo: formattedPhone2)
+          .limit(1)
+          .get();
+
+      final isInFirestore = querySnapshot1.docs.isNotEmpty || querySnapshot2.docs.isNotEmpty;
 
       // Chỉ kiểm tra Firestore vì Firebase Auth không hỗ trợ fetchSignInMethodsForEmail với phone number
       return isInFirestore;
     } catch (e) {
-      print('❌ Error checking phone registration: $e');
       return false;
     }
   }
@@ -83,14 +100,8 @@ class AuthService {
       // Firebase sẽ tự động sử dụng template đã cấu hình trong Console
       // Template: <#> %APP_NAME%: Mã xác thực của bạn là %LOGIN_CODE%.
       // Không chia sẻ mã này cho bất kỳ ai.
-      print('📱 Firebase SMS Template đã được cấu hình');
-      print('📱 Template: <#> %APP_NAME%: Mã xác thực của bạn là %LOGIN_CODE%.');
-      print('📱 App Name: Herb Scan');
-      print('📱 Expected SMS: <#> Herb Scan: Mã xác thực của bạn là [CODE].');
-      print('📱 Không chia sẻ mã này cho bất kỳ ai.');
-      print('📱 Firebase sẽ tự gắn app hash ở dòng cuối');
     } catch (e) {
-      print('❌ Error configuring SMS template: $e');
+      // Ignore
     }
   }
 
@@ -99,10 +110,8 @@ class AuthService {
     try {
       // Firebase sẽ tự động sử dụng template đã cấu hình trong Console
       // Template: %LOGIN_CODE% là mã đặt lại mật khẩu của bạn cho %APP_NAME%.
-      print('📱 Firebase Password Reset SMS Template đã được cấu hình');
-      print('📱 Template: %LOGIN_CODE% là mã đặt lại mật khẩu của bạn cho %APP_NAME%');
     } catch (e) {
-      print('❌ Error configuring Password Reset SMS template: $e');
+      // Ignore
     }
   }
 
@@ -156,14 +165,10 @@ class AuthService {
             verificationId = 'auto_verified';
           },
           verificationFailed: (FirebaseAuthException e) {
-            print('❌ Verification failed: ${e.message}');
             // Không throw exception ở đây, để xử lý ở catch block
           },
           codeSent: (String verificationIdParam, int? resendToken) {
             verificationId = verificationIdParam;
-            print('✅ OTP sent successfully! Verification ID: $verificationIdParam');
-            print('📱 SMS đã được gửi với template tùy chỉnh');
-            print('🚀 Chuyển đến màn hình OTP ngay lập tức');
           },
           codeAutoRetrievalTimeout: (String verificationIdParam) {
             verificationId = verificationIdParam;
@@ -179,21 +184,17 @@ class AuthService {
       }
       
       if (verificationId != null) {
-        print('✅ Verification ID received: $verificationId');
         return AuthResult.success(
           null, 
           verificationId: verificationId!
         );
       } else {
-        print('❌ Timeout: Không nhận được verification ID sau ${attempts * 100}ms');
         return AuthResult.failure(message: 'Timeout: Không nhận được verification ID');
       }
       
     } catch (e) {
       // Nếu Firebase Phone Auth thất bại, fallback về Mock Mode
       if (e is FirebaseAuthException) {
-        print('❌ Firebase Phone Auth failed: ${e.message}');
-        
         // Xử lý đặc biệt cho lỗi blocked
         if (e.message?.contains('blocked all requests') == true) {
           return AuthResult.failure(
@@ -216,12 +217,49 @@ class AuthService {
           );
         }
       }
-      print('❌ General error: $e');
       return AuthResult.failure(message: 'Có lỗi xảy ra: $e');
     }
     
     } catch (e) {
-      print('❌ Error in sendPhoneOTP: $e');
+      return AuthResult.failure(message: 'Có lỗi xảy ra: $e');
+    }
+  }
+
+  /// Xác thực OTP để đăng nhập (user đã tồn tại)
+  Future<AuthResult> verifyPhoneOTPForLogin({
+    required String verificationId,
+    required String otp,
+  }) async {
+    try {
+      // Mock mode cho development
+      if (verificationId.startsWith('mock_verification_')) {
+        if (otp == '123456') {
+          // Mock success
+          return AuthResult.success(null);
+        } else {
+          return AuthResult.failure(message: 'Mã OTP không đúng. Sử dụng 123456 cho mock mode.');
+        }
+      }
+      
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      
+      // Sign in với credential
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (userCredential.user != null) {
+        return AuthResult.success(userCredential.user);
+      } else {
+        return AuthResult.failure(message: 'Xác thực OTP thất bại');
+      }
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.failure(
+        message: _getErrorMessage(e.code),
+        code: e.code,
+      );
+    } catch (e) {
       return AuthResult.failure(message: 'Có lỗi xảy ra: $e');
     }
   }
@@ -268,6 +306,10 @@ class AuthService {
           displayName: displayName,
         );
         
+        // Đặt lastNotificationViewedTime = thời điểm hiện tại cho user mới
+        // Để chỉ hiển thị thông báo cho các bài mới từ sau thời điểm đăng ký
+        await NotificationBadgeService.markAsViewed();
+        
         return AuthResult.success(userCredential.user);
       } else {
         return AuthResult.failure(message: 'Xác thực OTP thất bại');
@@ -288,53 +330,102 @@ class AuthService {
     required String password,
   }) async {
     try {
-      print('🔍 Attempting phone login for: $phoneNumber');
-      
-      // Format phone number
-      String formattedPhone = phoneNumber;
-      if (phoneNumber.startsWith('0') && phoneNumber.length == 10) {
-        formattedPhone = '+84${phoneNumber.substring(1)}';
-      } else if (!phoneNumber.startsWith('+')) {
-        formattedPhone = '+84$phoneNumber';
+      // Chuẩn hóa số điện thoại để kiểm tra (bỏ prefix, chỉ lấy 9 số cuối)
+      String phoneWithoutPrefix = phoneNumber;
+      if (phoneNumber.startsWith('+84')) {
+        phoneWithoutPrefix = phoneNumber.substring(3); // Bỏ +84, lấy 9 số cuối
+      } else if (phoneNumber.startsWith('0')) {
+        phoneWithoutPrefix = phoneNumber.substring(1); // Bỏ số 0 đầu, lấy 9 số cuối
+      } else if (phoneNumber.startsWith('84')) {
+        phoneWithoutPrefix = phoneNumber.substring(2); // Bỏ 84, lấy 9 số cuối
       }
+      
+      String formattedPhone1 = '+84$phoneWithoutPrefix'; // Format 1: +84334666030
+      String formattedPhone2 = '0$phoneWithoutPrefix';   // Format 2: 0334666030
 
-      print('📱 Formatted phone: $formattedPhone');
-
-      // Kiểm tra user có tồn tại trong Firestore không
-      final querySnapshot = await FirebaseFirestore.instance
+      // Kiểm tra format +84
+      var exactQuery1 = await FirebaseFirestore.instance
           .collection('users')
-          .where('phoneNumber', isEqualTo: formattedPhone)
+          .where('phoneNumber', isEqualTo: formattedPhone1)
           .limit(1)
           .get();
 
-      if (querySnapshot.docs.isEmpty) {
-        print('❌ Phone number $formattedPhone not found in Firestore');
+      // Kiểm tra format 0
+      var exactQuery2 = await FirebaseFirestore.instance
+          .collection('users')
+          .where('phoneNumber', isEqualTo: formattedPhone2)
+          .limit(1)
+          .get();
+
+      QuerySnapshot<Map<String, dynamic>>? exactQuery;
+      String finalFormattedPhone = formattedPhone1;
+
+      if (exactQuery1.docs.isNotEmpty) {
+        exactQuery = exactQuery1;
+        finalFormattedPhone = formattedPhone1;
+      } else if (exactQuery2.docs.isNotEmpty) {
+        exactQuery = exactQuery2;
+        finalFormattedPhone = formattedPhone2;
+      }
+
+      if (exactQuery != null && exactQuery.docs.isNotEmpty) {
+        // Số điện thoại chính xác có trên Firebase → kiểm tra password
+        final userDoc = exactQuery.docs.first;
+        final userData = userDoc.data();
+        final storedPassword = userData['password'] as String?;
+        final uid = userData['uid'] as String?;
+
+        if (uid == null) {
+          return AuthResult.failure(message: 'Tài khoản chưa được đăng ký');
+        }
+
+        // Kiểm tra password
+        if (storedPassword == null || storedPassword != password) {
+          return AuthResult.failure(
+            message: 'Tài khoản hoặc mật khẩu không đúng',
+            code: 'wrong-password'
+          );
+        }
+      } else {
+        // Số điện thoại chính xác KHÔNG có trên Firebase
         return AuthResult.failure(
-          message: 'Số điện thoại chưa được đăng ký',
+          message: 'Tài khoản chưa được đăng ký',
           code: 'phone-not-found'
         );
       }
 
-      // Tìm user trong Firebase Auth bằng phone number
-      final userDoc = querySnapshot.docs.first;
+      // Nếu đến đây, password đã đúng và số điện thoại tồn tại
+      // (Đã kiểm tra trong if block trên)
+      final userDoc = exactQuery.docs.first;
       final userData = userDoc.data();
       final uid = userData['uid'] as String?;
 
       if (uid == null) {
-        return AuthResult.failure(message: 'Thông tin tài khoản không hợp lệ');
+        return AuthResult.failure(message: 'Tài khoản chưa được đăng ký');
       }
 
-      // Lấy user từ Firebase Auth
-      final user = await _auth.currentUser;
-      if (user == null || user.uid != uid) {
-        print('❌ User not authenticated or UID mismatch. Current user: ${user?.uid}, Expected: $uid');
-        // Thay vì yêu cầu OTP, cho phép đăng nhập bằng password
-        print('✅ Phone number verified, allowing login with password');
-        return AuthResult.success(null);
+      // Kiểm tra user đã authenticated trong Firebase Auth chưa
+      final currentUser = _auth.currentUser;
+      if (currentUser != null && currentUser.uid == uid) {
+        // User đã authenticated, cho phép đăng nhập
+        return AuthResult.success(currentUser);
       }
 
-      print('✅ Phone login successful for $formattedPhone');
-      return AuthResult.success(user);
+      // User chưa authenticated, cần verify phone bằng OTP trước
+      // Gửi OTP để verify phone và sign in
+      final otpResult = await sendPhoneOTP(finalFormattedPhone);
+      
+      if (otpResult.isSuccess && otpResult.verificationId != null) {
+        // Trả về verificationId để user nhập OTP
+        return AuthResult.success(
+          null,
+          verificationId: otpResult.verificationId!,
+        );
+      } else {
+        return AuthResult.failure(
+          message: otpResult.errorMessage ?? 'Không thể gửi mã OTP',
+        );
+      }
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(
         message: _getErrorMessage(e.code),
@@ -362,6 +453,17 @@ class AuthService {
         await credential.user!.updateDisplayName(displayName);
         await credential.user!.reload();
         
+        // Lưu thông tin user vào Firestore (nếu chưa có)
+        await _saveUserToFirestore(
+          credential.user!,
+          phoneNumber: '',
+          displayName: displayName,
+        );
+        
+        // Đặt lastNotificationViewedTime = thời điểm hiện tại cho user mới
+        // Để chỉ hiển thị thông báo cho các bài mới từ sau thời điểm đăng ký
+        await NotificationBadgeService.markAsViewed();
+        
         return AuthResult.success(credential.user);
       } else {
         return AuthResult.failure(message: 'Đăng ký thất bại');
@@ -379,7 +481,27 @@ class AuthService {
   /// Đăng nhập bằng Google
   Future<AuthResult> signInWithGoogle() async {
     try {
+      // Sign out Google trước để clear cache và force hiển thị account picker
+      // Lưu ý: Consent screen chỉ hiển thị nếu user chưa từng cho phép app
+      // Nếu user đã cho phép app trước đó, Google sẽ không hiển thị lại consent screen (theo Google policy)
+      try {
+        // Kiểm tra xem có account nào đang cached không
+        final currentGoogleUser = await _googleSignIn.signInSilently();
+        if (currentGoogleUser != null) {
+          // Có account cached → sign out để force hiển thị account picker
+          await _googleSignIn.signOut();
+          // Đợi một chút để đảm bảo sign out hoàn tất
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+      } catch (e) {
+        // Không có account cached hoặc lỗi → tiếp tục
+      }
+      
       // Trigger the authentication flow
+      // Với forceCodeForRefreshToken: true, Google Sign In sẽ:
+      // 1. Luôn hiển thị account picker để user chọn account
+      // 2. Hiển thị OAuth consent screen nếu user chưa từng cho phép app
+      //    (Nếu user đã cho phép app trước đó, consent screen sẽ không hiển thị lại - đây là hành vi bình thường của Google)
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) {
@@ -399,7 +521,26 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       
       if (userCredential.user != null) {
-        return AuthResult.success(userCredential.user);
+        final user = userCredential.user!;
+        
+        // Kiểm tra xem user đã tồn tại trong Firestore chưa
+        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        final isNewUser = !userDoc.exists;
+        
+            if (isNewUser) {
+              // User mới → lưu vào Firestore và set lastNotificationViewedTime
+              await _saveUserToFirestore(
+                user,
+                phoneNumber: '',
+                displayName: user.displayName ?? user.email?.split('@')[0] ?? 'User',
+              );
+              
+              // Đặt lastNotificationViewedTime = thời điểm hiện tại cho user mới
+              // Để chỉ hiển thị thông báo cho các bài mới từ sau thời điểm đăng ký
+              await NotificationBadgeService.markAsViewed();
+            }
+        
+        return AuthResult.success(user);
       } else {
         return AuthResult.failure(message: 'Đăng nhập Google thất bại');
       }
@@ -458,14 +599,12 @@ class AuthService {
         verificationCompleted: (PhoneAuthCredential credential) {
           verificationId = 'auto_verified';
         },
-        verificationFailed: (FirebaseAuthException e) {
-          print('❌ Password reset verification failed: ${e.message}');
-        },
-        codeSent: (String verificationIdParam, int? resendToken) {
-          verificationId = verificationIdParam;
-          print('✅ Password reset SMS sent! Verification ID: $verificationIdParam');
-          print('📱 SMS đã được gửi với template Password Reset');
-        },
+          verificationFailed: (FirebaseAuthException e) {
+            // Ignore
+          },
+          codeSent: (String verificationIdParam, int? resendToken) {
+            verificationId = verificationIdParam;
+          },
         codeAutoRetrievalTimeout: (String verificationIdParam) {
           verificationId = verificationIdParam;
         },
@@ -531,7 +670,7 @@ class AuthService {
         'isActive': true,
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Error saving user to Firestore: $e');
+      // Ignore
     }
   }
 
@@ -539,13 +678,13 @@ class AuthService {
   String _getErrorMessage(String errorCode) {
     switch (errorCode) {
       case 'user-not-found':
-        return 'Không tìm thấy tài khoản với email này';
+        return 'Tài khoản chưa được đăng ký';
       case 'wrong-password':
-        return 'Mật khẩu không chính xác';
+        return 'Tài khoản hoặc mật khẩu không đúng';
       case 'email-already-in-use':
         return 'Email này đã được sử dụng';
       case 'phone-not-found':
-        return 'Số điện thoại chưa được đăng ký';
+        return 'Tài khoản chưa được đăng ký';
       case 'phone-auth-required':
         return 'Vui lòng đăng nhập bằng OTP để xác thực số điện thoại';
       case 'invalid-phone-number':
@@ -612,8 +751,6 @@ class AuthService {
         formattedPhone = '+84$phoneNumber';
       }
 
-      print('🔍 Checking if phone $formattedPhone is registered for password reset...');
-
       // Check in Firestore
       final userQuery = await _firestore
           .collection('users')
@@ -622,7 +759,6 @@ class AuthService {
           .get();
 
       final isRegistered = userQuery.docs.isNotEmpty;
-      print('📊 Firestore check result: $isRegistered');
 
       if (isRegistered) {
         return AuthResult.success(null);
@@ -633,7 +769,6 @@ class AuthService {
         );
       }
     } catch (e) {
-      print('❌ Error checking phone registration: $e');
       return AuthResult.failure(message: 'Có lỗi xảy ra khi kiểm tra số điện thoại');
     }
   }
@@ -646,16 +781,6 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      // Format phone number
-      String formattedPhone = phoneNumber;
-      if (phoneNumber.startsWith('0')) {
-        formattedPhone = '+84${phoneNumber.substring(1)}';
-      } else if (!phoneNumber.startsWith('+84')) {
-        formattedPhone = '+84$phoneNumber';
-      }
-
-      print('🔄 Updating password for phone: $formattedPhone');
-
       // Verify OTP first
       final otpResult = await verifyPhoneOTP(
         verificationId: verificationId,
@@ -678,8 +803,6 @@ class AuthService {
 
       // Update password
       await currentUser.updatePassword(newPassword);
-      
-      print('✅ Password updated successfully');
 
       // Update password in Firestore
       await _firestore.collection('users').doc(currentUser.uid).update({
@@ -687,17 +810,13 @@ class AuthService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Password updated in Firestore');
-
       return AuthResult.success(null);
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error updating password: ${e.message}');
       return AuthResult.failure(
         message: _getErrorMessage(e.code),
         code: e.code,
       );
     } catch (e) {
-      print('❌ Error updating password: $e');
       return AuthResult.failure(message: 'Có lỗi xảy ra khi cập nhật mật khẩu');
     }
   }

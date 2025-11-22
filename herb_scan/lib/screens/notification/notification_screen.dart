@@ -29,10 +29,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isLoading = true);
     try {
       final articles = await NotificationBadgeService.getNewArticles();
+      
+      // Lấy thời điểm xem cuối cùng (nếu user mới đăng ký, chỉ hiển thị bài từ sau thời điểm đăng ký)
+      final lastViewed = await NotificationBadgeService.getLastViewedTime();
+      
+      // Lọc các bài: chỉ hiển thị bài được tạo SAU lastViewed (hoặc tất cả nếu lastViewed == null)
+      final filteredArticles = articles.where((article) {
+        final createdAt = article['createdAt'] as DateTime;
+        // Nếu lastViewed == null, hiển thị tất cả (trường hợp cũ - user chưa đăng ký)
+        // Nếu lastViewed != null, chỉ hiển thị bài được tạo SAU lastViewed (user mới đăng ký)
+        if (lastViewed == null) return true;
+        // Chỉ hiển thị bài được tạo SAU thời điểm đăng ký (thêm 1 giây để tránh vấn đề precision)
+        return createdAt.isAfter(lastViewed.add(const Duration(seconds: 1)));
+      }).toList();
+      
       // Lấy danh sách bài đã đọc (dạng key "collection:id") để hiển thị mờ
       final readKeys = await NotificationBadgeService.getReadArticleIds();
       setState(() {
-        _allNotifications = articles.map((map) {
+        _allNotifications = filteredArticles.map((map) {
           final key = '${map['collection']}:${map['id']}';
           final isRead = readKeys.contains(key);
           return NotificationItem.fromMap(map, isRead: isRead);
@@ -40,7 +54,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error loading notifications: $e');
       setState(() => _isLoading = false);
     }
   }

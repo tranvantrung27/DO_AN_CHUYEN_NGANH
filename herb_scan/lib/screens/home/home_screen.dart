@@ -97,6 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               initialData: 0,
                               builder: (context, snapshot) {
                                 final count = snapshot.data ?? 0;
+                                print('🔔 StreamBuilder: count=$count, hasError=${snapshot.hasError}, connectionState=${snapshot.connectionState}');
+                                if (snapshot.hasError) {
+                                  print('🔔 StreamBuilder error: ${snapshot.error}');
+                                }
                                 if (count <= 0) {
                                   return const SizedBox.shrink();
                                 }
