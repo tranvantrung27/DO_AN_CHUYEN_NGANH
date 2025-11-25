@@ -5,15 +5,18 @@ import '../../constants/app_colors.dart';
 import '../../mixins/validation_mixin.dart';
 import '../../mixins/loading_mixin.dart';
 import '../../services/auth_service.dart';
+import 'login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String phoneNumber;
   final String verificationId;
+  final String otp;
 
   const ResetPasswordScreen({
     super.key,
     required this.phoneNumber,
     required this.verificationId,
+    required this.otp,
   });
 
   @override
@@ -91,24 +94,35 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         final result = await _authService.updatePassword(
           phoneNumber: widget.phoneNumber,
           verificationId: widget.verificationId,
-          otp: '123456', // TODO: Pass actual OTP from previous screen
+          otp: widget.otp, // Sử dụng OTP thực tế từ màn hình trước
           newPassword: newPassword,
         );
 
         if (result.isSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đặt lại mật khẩu thành công!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // Đăng xuất user vì đã hoàn tất reset password
+          await _authService.signOut();
           
-          // Navigate back to login screen
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/login',
-            (route) => false,
-          );
+          // Hiển thị thông báo thành công
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đặt lại mật khẩu thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            
+            // Chờ một chút để user thấy thông báo
+            await Future.delayed(const Duration(milliseconds: 500));
+            
+            // Navigate back to login screen
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            }
+          }
         } else {
           throw Exception(result.errorMessage);
         }

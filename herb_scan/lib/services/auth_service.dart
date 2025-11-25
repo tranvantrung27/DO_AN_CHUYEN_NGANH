@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/index.dart';
 import 'notification/notification_service.dart';
 import 'notification/notification_badge_service.dart';
@@ -225,6 +227,102 @@ class AuthService {
     }
   }
 
+  /// Gửi OTP đến số điện thoại cho đăng nhập (không kiểm tra số đã đăng ký)
+  Future<AuthResult> sendPhoneOTPForLogin(String phoneNumber) async {
+    try {
+      // Format phone number
+      String formattedPhone = phoneNumber;
+      if (phoneNumber.startsWith('0') && phoneNumber.length == 10) {
+        formattedPhone = '+84${phoneNumber.substring(1)}';
+      } else if (!phoneNumber.startsWith('+')) {
+        formattedPhone = '+84$phoneNumber';
+      }
+      
+      // Danh sách test phone numbers cho Mock Mode (chỉ dành cho development)
+      final testPhones = [
+        '0123456789',
+        '+84123456789', 
+        '0389399195',
+        '+84987654321',
+      ];
+      
+      // Kiểm tra nếu là test phone number
+      if (testPhones.contains(phoneNumber) || testPhones.contains(formattedPhone)) {
+        return AuthResult.success(
+          null, 
+          verificationId: 'mock_verification_${phoneNumber}_${DateTime.now().millisecondsSinceEpoch}'
+        );
+      }
+      
+      // Firebase Phone Auth thật
+      String? verificationId;
+      
+      // Cấu hình SMS Template
+      await _configureSMSTemplate();
+      
+      await _auth.verifyPhoneNumber(
+        phoneNumber: formattedPhone,
+        verificationCompleted: (PhoneAuthCredential credential) {
+          // Auto verification completed
+          verificationId = 'auto_verified';
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          // Không throw exception ở đây, để xử lý ở catch block
+        },
+        codeSent: (String verificationIdParam, int? resendToken) {
+          verificationId = verificationIdParam;
+        },
+        codeAutoRetrievalTimeout: (String verificationIdParam) {
+          verificationId = verificationIdParam;
+        },
+        timeout: const Duration(seconds: 30),
+      );
+    
+      // Chờ verification ID với timeout ngắn để đảm bảo có ID thật
+      int attempts = 0;
+      while (verificationId == null && attempts < 50) { // 5 giây
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+      
+      if (verificationId != null) {
+        return AuthResult.success(
+          null, 
+          verificationId: verificationId!
+        );
+      } else {
+        return AuthResult.failure(message: 'Timeout: Không nhận được verification ID');
+      }
+      
+    } catch (e) {
+      // Nếu Firebase Phone Auth thất bại, fallback về Mock Mode
+      if (e is FirebaseAuthException) {
+        // Xử lý đặc biệt cho lỗi blocked
+        if (e.message?.contains('blocked all requests') == true) {
+          return AuthResult.failure(
+            message: 'Bạn đã thực hiện quá nhiều thao tác. Vui lòng thử lại sau',
+            code: 'device-blocked',
+          );
+        }
+        
+        // Nếu OTP đã được gửi nhưng có lỗi khác, vẫn cho phép verify
+        if (e.code == 'too-many-requests' || e.code == 'invalid-phone-number') {
+          return AuthResult.failure(
+            message: 'Bạn đã thực hiện quá nhiều thao tác. Vui lòng thử lại sau',
+            code: e.code,
+          );
+        } else {
+          // Các lỗi khác có thể vẫn cho phép OTP được gửi
+          return AuthResult.success(
+            null, 
+            verificationId: 'fallback_verification_${DateTime.now().millisecondsSinceEpoch}'
+          );
+        }
+      }
+      return AuthResult.failure(message: 'Có lỗi xảy ra: $e');
+    }
+  }
+
   /// Xác thực OTP để đăng nhập (user đã tồn tại)
   Future<AuthResult> verifyPhoneOTPForLogin({
     required String verificationId,
@@ -411,21 +509,21 @@ class AuthService {
         return AuthResult.success(currentUser);
       }
 
-      // User chưa authenticated, cần verify phone bằng OTP trước
-      // Gửi OTP để verify phone và sign in
-      final otpResult = await sendPhoneOTP(finalFormattedPhone);
-      
-      if (otpResult.isSuccess && otpResult.verificationId != null) {
-        // Trả về verificationId để user nhập OTP
-        return AuthResult.success(
-          null,
-          verificationId: otpResult.verificationId!,
-        );
-      } else {
-        return AuthResult.failure(
-          message: otpResult.errorMessage ?? 'Không thể gửi mã OTP',
-        );
+      // Password đúng nhưng user chưa authenticated trong Firebase Auth
+      // Firebase Auth không hỗ trợ phone + password trực tiếp
+      // Vì password đã đúng, cho phép đăng nhập dựa trên Firestore
+      // Lưu user ID vào SharedPreferences để các service khác (như badge notification) có thể sử dụng
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('current_user_id', uid);
+        await prefs.setString('current_user_phone', finalFormattedPhone);
+      } catch (e) {
+        // Ignore nếu không lưu được
       }
+      
+      // Trả về success - password đã đúng, cho phép đăng nhập
+      // Login screen sẽ xử lý việc chuyển màn hình
+      return AuthResult.success(null);
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(
         message: _getErrorMessage(e.code),
@@ -591,40 +689,78 @@ class AuthService {
       // Cấu hình Password Reset SMS Template
       await _configurePasswordResetTemplate();
 
-      // Gửi SMS reset password
-      String? verificationId;
+      // Sử dụng Completer để đợi callback từ verifyPhoneNumber
+      final Completer<String?> completer = Completer<String?>();
+      String? errorMessage;
+      String? receivedVerificationId;
       
-      await _auth.verifyPhoneNumber(
+      _auth.verifyPhoneNumber(
         phoneNumber: formattedPhone,
         verificationCompleted: (PhoneAuthCredential credential) {
-          verificationId = 'auto_verified';
+          // Auto-verification (ít khi xảy ra)
+          receivedVerificationId = 'auto_verified';
+          if (!completer.isCompleted) {
+            completer.complete('auto_verified');
+          }
         },
-          verificationFailed: (FirebaseAuthException e) {
-            // Ignore
-          },
-          codeSent: (String verificationIdParam, int? resendToken) {
-            verificationId = verificationIdParam;
-          },
+        verificationFailed: (FirebaseAuthException e) {
+          // Lưu lỗi và complete với null
+          errorMessage = _getErrorMessage(e.code);
+          if (!completer.isCompleted) {
+            completer.complete(null);
+          }
+        },
+        codeSent: (String verificationIdParam, int? resendToken) {
+          // SMS đã được gửi thành công, nhận được verification ID
+          receivedVerificationId = verificationIdParam;
+          if (!completer.isCompleted) {
+            completer.complete(verificationIdParam);
+          }
+        },
         codeAutoRetrievalTimeout: (String verificationIdParam) {
-          verificationId = verificationIdParam;
+          // Timeout nhưng vẫn có verification ID (fallback)
+          receivedVerificationId = verificationIdParam;
+          if (!completer.isCompleted) {
+            completer.complete(verificationIdParam);
+          }
         },
-        timeout: const Duration(seconds: 30),
+        timeout: const Duration(seconds: 60),
       );
 
-      // Wait for verification ID
-      int attempts = 0;
-      while (verificationId == null && attempts < 30) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        attempts++;
+      // Đợi verification ID với timeout 30 giây (tăng từ 20 để đảm bảo có đủ thời gian)
+      String? verificationId;
+      try {
+        verificationId = await completer.future.timeout(
+          const Duration(seconds: 30),
+        );
+      } catch (e) {
+        // Timeout xảy ra, nhưng kiểm tra xem có nhận được verification ID sau đó không
+        // Đợi thêm một chút để đảm bảo callback có cơ hội được gọi
+        await Future.delayed(const Duration(seconds: 2));
+        verificationId = receivedVerificationId;
       }
 
-      if (verificationId != null) {
+      if (verificationId != null && verificationId.isNotEmpty) {
         return AuthResult.success(
           null, 
-          verificationId: verificationId!
+          verificationId: verificationId
         );
+      } else if (errorMessage != null) {
+        return AuthResult.failure(message: errorMessage!);
       } else {
-        return AuthResult.failure(message: 'Timeout: Không nhận được verification ID');
+        // Nếu không có lỗi nhưng cũng không có verification ID
+        // Có thể SMS đã được gửi nhưng callback chưa đến kịp
+        // Trong trường hợp này, thử đợi thêm một chút nữa
+        await Future.delayed(const Duration(seconds: 3));
+        if (receivedVerificationId != null && receivedVerificationId!.isNotEmpty) {
+          return AuthResult.success(
+            null, 
+            verificationId: receivedVerificationId
+          );
+        }
+        return AuthResult.failure(
+          message: 'Không thể gửi SMS. Vui lòng kiểm tra số điện thoại và thử lại.'
+        );
       }
 
     } on FirebaseAuthException catch (e) {
@@ -711,6 +847,8 @@ class AuthService {
         return 'Phương thức đăng nhập này chưa được kích hoạt';
       case 'invalid-credential':
         return 'Thông tin đăng nhập không hợp lệ';
+      case 'requires-recent-login':
+        return 'Cần xác thực lại để thực hiện thao tác này';
       case 'app-check-token-invalid':
         return 'Ứng dụng chưa được xác thực. Vui lòng thử lại';
       case 'app-check-token-expired':
@@ -773,7 +911,47 @@ class AuthService {
     }
   }
 
+  /// Xác thực OTP cho reset password (chỉ verify, không tạo user mới)
+  Future<AuthResult> verifyOTPForPasswordReset({
+    required String verificationId,
+    required String otp,
+  }) async {
+    try {
+      // Mock mode cho development
+      if (verificationId.startsWith('mock_verification_')) {
+        if (otp == '123456') {
+          return AuthResult.success(null);
+        } else {
+          return AuthResult.failure(message: 'Mã OTP không đúng. Sử dụng 123456 cho mock mode.');
+        }
+      }
+      
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      
+      // Sign in với credential để verify OTP
+      // User đã tồn tại trong hệ thống nên sẽ sign in vào account đó
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (userCredential.user != null) {
+        return AuthResult.success(userCredential.user);
+      } else {
+        return AuthResult.failure(message: 'Xác thực OTP thất bại');
+      }
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.failure(
+        message: _getErrorMessage(e.code),
+        code: e.code,
+      );
+    } catch (e) {
+      return AuthResult.failure(message: 'Có lỗi xảy ra: $e');
+    }
+  }
+
   /// Cập nhật mật khẩu mới cho người dùng
+  /// Lưu ý: OTP đã được verify ở màn hình trước, user đã được sign in
   Future<AuthResult> updatePassword({
     required String phoneNumber,
     required String verificationId,
@@ -781,43 +959,118 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      // Verify OTP first
-      final otpResult = await verifyPhoneOTP(
-        verificationId: verificationId,
-        otp: otp,
-        displayName: 'Password Reset User',
-      );
-
-      if (!otpResult.isSuccess) {
-        return otpResult;
-      }
-
-      // Get current user
+      // Get current user (đã được sign in sau khi verify OTP ở màn hình trước)
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
-        return AuthResult.failure(
-          message: 'Người dùng chưa đăng nhập',
-          code: 'user-not-signed-in',
+        // Nếu chưa sign in, thử verify OTP lại để sign in
+        final otpResult = await verifyOTPForPasswordReset(
+          verificationId: verificationId,
+          otp: otp,
         );
+
+        if (!otpResult.isSuccess) {
+          return otpResult;
+        }
+
+        // Đợi một chút để user được sign in hoàn toàn
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Lấy lại current user sau khi sign in
+        final userAfterSignIn = _auth.currentUser;
+        if (userAfterSignIn == null) {
+          return AuthResult.failure(
+            message: 'Không thể đăng nhập. Vui lòng thử lại.',
+            code: 'user-not-signed-in',
+          );
+        }
+
+        // Update password trong Firebase Auth
+        await userAfterSignIn.updatePassword(newPassword);
+
+        // Update password in Firestore (có thể bỏ qua nếu lỗi)
+        try {
+          await _firestore.collection('users').doc(userAfterSignIn.uid).update({
+            'password': newPassword,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } catch (firestoreError) {
+          // Log lỗi Firestore nhưng không fail toàn bộ operation
+          print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+        }
+
+        return AuthResult.success(null);
+      } else {
+        // User đã sign in, update password trực tiếp
+        try {
+          // Update password trong Firebase Auth
+          await currentUser.updatePassword(newPassword);
+
+          // Update password in Firestore (có thể bỏ qua nếu lỗi)
+          try {
+            await _firestore.collection('users').doc(currentUser.uid).update({
+              'password': newPassword,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          } catch (firestoreError) {
+            // Log lỗi Firestore nhưng không fail toàn bộ operation
+            // Vì password đã được update trong Firebase Auth rồi
+            print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+          }
+
+          return AuthResult.success(null);
+        } on FirebaseAuthException catch (e) {
+          // Nếu lỗi là requires-recent-login, có thể cần re-authenticate
+          if (e.code == 'requires-recent-login') {
+            // Thử verify OTP lại để re-authenticate
+            try {
+              final credential = PhoneAuthProvider.credential(
+                verificationId: verificationId,
+                smsCode: otp,
+              );
+              await currentUser.reauthenticateWithCredential(credential);
+              
+              // Sau khi re-authenticate, update password lại
+              await currentUser.updatePassword(newPassword);
+              
+              // Update password in Firestore (có thể bỏ qua nếu lỗi)
+              try {
+                await _firestore.collection('users').doc(currentUser.uid).update({
+                  'password': newPassword,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+              } catch (firestoreError) {
+                print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+              }
+
+              return AuthResult.success(null);
+            } catch (reAuthError) {
+              String errorMsg = 'Cần xác thực lại. ';
+              if (reAuthError is FirebaseAuthException) {
+                errorMsg += _getErrorMessage(reAuthError.code);
+              } else {
+                errorMsg += 'Vui lòng thử lại.';
+              }
+              return AuthResult.failure(
+                message: errorMsg,
+                code: e.code,
+              );
+            }
+          }
+          return AuthResult.failure(
+            message: _getErrorMessage(e.code),
+            code: e.code,
+          );
+        }
       }
-
-      // Update password
-      await currentUser.updatePassword(newPassword);
-
-      // Update password in Firestore
-      await _firestore.collection('users').doc(currentUser.uid).update({
-        'password': newPassword,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      return AuthResult.success(null);
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(
         message: _getErrorMessage(e.code),
         code: e.code,
       );
     } catch (e) {
-      return AuthResult.failure(message: 'Có lỗi xảy ra khi cập nhật mật khẩu');
+      return AuthResult.failure(
+        message: 'Có lỗi xảy ra khi cập nhật mật khẩu: $e'
+      );
     }
   }
 }

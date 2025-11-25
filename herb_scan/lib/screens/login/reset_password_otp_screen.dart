@@ -28,12 +28,14 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
   Timer? _timer;
   bool _isResendEnabled = false;
   String _currentOTP = '';
+  String _currentVerificationId = ''; // Lưu verification ID hiện tại
 
   @override
   void initState() {
     super.initState();
+    _currentVerificationId = widget.verificationId; // Khởi tạo với verification ID ban đầu
     _startCountdown();
-    _sendOTP();
+    // Không gửi OTP lại khi init vì đã được gửi ở màn hình trước
   }
 
   @override
@@ -60,7 +62,11 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
   void _sendOTP() async {
     try {
       final result = await _authService.resetPasswordBySMS(widget.phoneNumber);
-      if (result.isSuccess) {
+      if (result.isSuccess && result.verificationId != null) {
+        // Cập nhật verification ID mới khi resend
+        setState(() {
+          _currentVerificationId = result.verificationId!;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đã gửi mã OTP đến ${widget.phoneNumber}'),
@@ -101,29 +107,49 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
       return;
     }
 
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
     try {
-      // TODO: Implement OTP verification for password reset
-      print('Verify OTP: $_currentOTP for phone: ${widget.phoneNumber}');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Xác thực thành công! Vui lòng đặt mật khẩu mới'),
-          backgroundColor: AppColors.primaryGreen,
-        ),
+      // Verify OTP thực sự với verification ID hiện tại
+      final verifyResult = await _authService.verifyOTPForPasswordReset(
+        verificationId: _currentVerificationId,
+        otp: _currentOTP,
       );
-      
-      // Navigate to new password screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResetPasswordScreen(
-            phoneNumber: widget.phoneNumber,
-            verificationId: widget.verificationId,
+
+      // Hide loading
+      Navigator.pop(context);
+
+      if (verifyResult.isSuccess) {
+        // Navigate to new password screen với OTP đã verify
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordScreen(
+              phoneNumber: widget.phoneNumber,
+              verificationId: _currentVerificationId,
+              otp: _currentOTP, // Truyền OTP thực tế
+            ),
           ),
-        ),
-      );
-      
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(verifyResult.errorMessage ?? 'Mã OTP không đúng. Vui lòng thử lại'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
+      // Hide loading
+      Navigator.pop(context);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Mã OTP không đúng. Vui lòng thử lại'),

@@ -314,6 +314,7 @@ class _LoginScreenState extends State<LoginScreen>
       }
       
       if (result.isSuccess && mounted) {
+        // Đăng nhập thành công, chuyển đến màn hình chính
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),

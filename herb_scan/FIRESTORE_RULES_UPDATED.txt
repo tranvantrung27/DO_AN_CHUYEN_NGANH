@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Cho phép đọc tất cả collections: diseases, healthy, users
+    match /{collection}/{document} {
+      allow read: if true;
+    }
+    
+    // Cho phép ghi cho admin (chỉ dùng trong admin page)
+    // Lưu ý: Trong production, nên bảo vệ bằng authentication
+    match /diseases/{document} {
+      allow read: if true;
+      allow create, update, delete: if true; // Tạm thời cho phép tất cả
+    }
+    
+    match /healthy/{document} {
+      allow read: if true;
+      allow create, update, delete: if true; // Tạm thời cho phép tất cả
+    }
+    
+    // Kho thuốc - Herballibrary collection
+    match /herballibrary/{document} {
+      allow read: if true;
+      allow create, update, delete: if true; // Tạm thời cho phép tất cả
+    }
+    
+    // Danh mục thảo dược - Herb categories collection
+    match /herb_categories/{document} {
+      allow read: if true;
+      allow create, update, delete: if true; // Tạm thời cho phép tất cả
+    }
+    
+    // Users collection - chỉ user đó mới đọc/ghi được dữ liệu của mình
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+

@@ -15,14 +15,23 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  final ValueNotifier<int> _tabChangeNotifier = ValueNotifier<int>(0);
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const HomeScreen(),           // 0: Trang chủ
     const HistoryScreen(),        // 1: Lịch sử
     const ScanScreen(),           // 2: Quét
-    const HerbLibraryScreen(),    // 3: Kho thuốc
+    HerbLibraryScreen(            // 3: Kho thuốc
+      tabChangeNotifier: _tabChangeNotifier,
+    ),
     const SettingsScreen(),       // 4: Cài đặt
   ];
+
+  @override
+  void dispose() {
+    _tabChangeNotifier.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +46,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           setState(() {
             _currentIndex = index;
           });
+          // Notify tab change
+          _tabChangeNotifier.value = index;
         },
       ),
     );

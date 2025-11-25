@@ -4,3 +4,5 @@
 export 'auth_service.dart';
 export 'notification/notification_service.dart';
 export 'DiseasesTab/disease_service.dart';
+export 'HerbLibrary/herb_library_service.dart';
+export 'HerbLibrary/herb_category_service.dart';

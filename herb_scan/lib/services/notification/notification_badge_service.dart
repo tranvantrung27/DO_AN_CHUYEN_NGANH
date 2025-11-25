@@ -8,17 +8,35 @@ class NotificationBadgeService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   
   /// Lấy user ID hiện tại
-  static String? get _currentUserId => _auth.currentUser?.uid;
+  /// Ưu tiên từ Firebase Auth, nếu không có thì lấy từ SharedPreferences
+  static Future<String?> _getCurrentUserId() async {
+    // Ưu tiên lấy từ Firebase Auth
+    final authUserId = _auth.currentUser?.uid;
+    if (authUserId != null) {
+      return authUserId;
+    }
+    
+    // Nếu không có, lấy từ SharedPreferences (cho trường hợp đăng nhập bằng phone + password)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('current_user_id');
+    } catch (e) {
+      return null;
+    }
+  }
 
   /// Tạo key duy nhất cho bài viết: "<collection>:<id>"
   static String _composeKey(String collection, String id) => '$collection:$id';
 
   /// Helpers: SharedPreferences keys theo từng user
-  static String _prefsKey(String base) => '${base}_${_currentUserId ?? "anonymous"}';
-  
+  static Future<String> _prefsKey(String base) async {
+    final userId = await _getCurrentUserId();
+    return '${base}_${userId ?? "anonymous"}';
+  }
+
   /// Lấy document reference cho user preferences
-  static DocumentReference? get _userPrefsDoc {
-    final userId = _currentUserId;
+  static Future<DocumentReference?> _getUserPrefsDoc() async {
+    final userId = await _getCurrentUserId();
     if (userId == null) return null;
     return _firestore.collection('user_preferences').doc(userId);
   }
@@ -26,11 +44,12 @@ class NotificationBadgeService {
   /// Lấy thời điểm user xem notification lần cuối từ Firestore
   static Future<DateTime?> _getLastViewedTime() async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
       if (docRef == null) {
         // Fallback local
         final prefs = await SharedPreferences.getInstance();
-        final ts = prefs.getInt(_prefsKey('last_notification_viewed_time'));
+        final key = await _prefsKey('last_notification_viewed_time');
+        final ts = prefs.getInt(key);
         return ts != null ? DateTime.fromMillisecondsSinceEpoch(ts) : null;
       }
       
@@ -38,7 +57,8 @@ class NotificationBadgeService {
       if (!doc.exists) {
         // Fallback local
         final prefs = await SharedPreferences.getInstance();
-        final ts = prefs.getInt(_prefsKey('last_notification_viewed_time'));
+        final key = await _prefsKey('last_notification_viewed_time');
+        final ts = prefs.getInt(key);
         return ts != null ? DateTime.fromMillisecondsSinceEpoch(ts) : null;
       }
       
@@ -58,12 +78,13 @@ class NotificationBadgeService {
   /// Lưu thời điểm user xem notification (hiện tại) vào Firestore
   static Future<void> markAsViewed() async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
       final now = DateTime.now();
 
       // Local cache trước (cho UI phản hồi tức thì)
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_prefsKey('last_notification_viewed_time'), now.millisecondsSinceEpoch);
+      final key = await _prefsKey('last_notification_viewed_time');
+      await prefs.setInt(key, now.millisecondsSinceEpoch);
 
       // Remote (nếu có user)
       if (docRef != null) {
@@ -84,7 +105,8 @@ class NotificationBadgeService {
   static Future<int> getNewArticlesCount() async {
     try {
       // Nếu user chưa đăng nhập, không hiển thị badge
-      if (_currentUserId == null) {
+      final userId = await _getCurrentUserId();
+      if (userId == null) {
         return 0;
       }
       
@@ -163,42 +185,28 @@ class NotificationBadgeService {
   /// Sử dụng distinct() để chỉ emit khi giá trị thay đổi
   static Stream<int> watchNewArticlesCount() {
     // Tạo stream: emit giá trị ban đầu ngay lập tức nếu có user
-    final initialUser = _auth.currentUser;
-    Stream<int> initialStream;
-    if (initialUser != null) {
-      initialStream = Stream.fromFuture(getNewArticlesCount().catchError((e) {
-        return 0;
-      }));
-    } else {
-      initialStream = Stream.value(0);
-    }
-    
-    // Kết hợp với stream từ auth changes
-    final authStream = _auth.authStateChanges()
-        .where((user) => user != null)
-        .asyncExpand((user) async* {
-      // Emit giá trị ngay lập tức khi user đổi
-      try {
-        final count = await getNewArticlesCount();
-        yield count;
-      } catch (e) {
-        yield 0;
-      }
-      
-      // Sau đó poll định kỳ mỗi 2 giây
-      await for (final _ in Stream.periodic(const Duration(seconds: 2))) {
-        try {
-          final count = await getNewArticlesCount();
-          yield count;
-        } catch (e) {
-          yield 0;
+    Stream<int> initialStream = Stream.fromFuture(
+      _getCurrentUserId().then((userId) {
+        if (userId != null) {
+          return getNewArticlesCount().catchError((e) => 0);
         }
+        return Future.value(0);
+      })
+    );
+    
+    // Kết hợp với stream từ auth changes và poll định kỳ
+    final periodicStream = Stream.periodic(const Duration(seconds: 2))
+        .asyncMap((_) async {
+      try {
+        return await getNewArticlesCount();
+      } catch (e) {
+        return 0;
       }
     });
     
-    // Kết hợp initial stream với auth stream
+    // Kết hợp initial stream với periodic stream
     return initialStream.asyncExpand((initialCount) {
-      return Stream.value(initialCount).asyncExpand((_) => authStream);
+      return Stream.value(initialCount).asyncExpand((_) => periodicStream);
     }).distinct();
   }
 
@@ -210,16 +218,17 @@ class NotificationBadgeService {
   /// Lưu ID bài viết đã đọc vào Firestore (cần cả collection để tránh trùng ID)
   static Future<void> markArticleAsRead(String collection, String articleId) async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
       
       final key = _composeKey(collection, articleId);
 
       // Local cache
       final prefs = await SharedPreferences.getInstance();
-      final local = prefs.getStringList(_prefsKey('read_articles_ids')) ?? [];
+      final prefsKey = await _prefsKey('read_articles_ids');
+      final local = prefs.getStringList(prefsKey) ?? [];
       if (!local.contains(key)) {
         local.add(key);
-        await prefs.setStringList(_prefsKey('read_articles_ids'), local);
+        await prefs.setStringList(prefsKey, local);
       }
 
       // Remote
@@ -238,13 +247,14 @@ class NotificationBadgeService {
   /// Truyền vào danh sách key "<collection>:<id>"
   static Future<void> markAllCurrentArticlesAsReadKeys(List<String> articleKeys) async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
 
       // Local cache
       final prefs = await SharedPreferences.getInstance();
-      final local = prefs.getStringList(_prefsKey('read_articles_ids')) ?? [];
+      final prefsKey = await _prefsKey('read_articles_ids');
+      final local = prefs.getStringList(prefsKey) ?? [];
       final merged = {...local, ...articleKeys}.toList();
-      await prefs.setStringList(_prefsKey('read_articles_ids'), merged);
+      await prefs.setStringList(prefsKey, merged);
       
       // Remote
       if (docRef != null) {
@@ -261,7 +271,7 @@ class NotificationBadgeService {
   /// Kiểm tra bài viết đã đọc chưa từ Firestore
   static Future<bool> isArticleRead(String collection, String articleId) async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
       if (docRef == null) return false;
       
       final doc = await docRef.get();
@@ -278,10 +288,11 @@ class NotificationBadgeService {
   /// Lấy danh sách ID bài viết đã đọc từ Firestore
   static Future<List<String>> getReadArticleIds() async {
     try {
-      final docRef = _userPrefsDoc;
+      final docRef = await _getUserPrefsDoc();
 
       final prefs = await SharedPreferences.getInstance();
-      final local = prefs.getStringList(_prefsKey('read_articles_ids')) ?? [];
+      final prefsKey = await _prefsKey('read_articles_ids');
+      final local = prefs.getStringList(prefsKey) ?? [];
 
       if (docRef == null) return local;
       
@@ -295,7 +306,8 @@ class NotificationBadgeService {
       return {...local, ...remote}.toList();
     } catch (e) {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getStringList(_prefsKey('read_articles_ids')) ?? [];
+      final prefsKey = await _prefsKey('read_articles_ids');
+      return prefs.getStringList(prefsKey) ?? [];
     }
   }
 

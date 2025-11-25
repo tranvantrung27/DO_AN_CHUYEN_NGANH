@@ -332,7 +332,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   void _handleResendOTP() async {
     await withLoadingAndErrorHandling(() async {
-      final result = await _authService.sendPhoneOTP(widget.phoneNumber);
+      AuthResult result;
+      
+      if (widget.isLogin) {
+        // Đăng nhập: dùng hàm riêng cho login
+        result = await _authService.sendPhoneOTPForLogin(widget.phoneNumber);
+      } else {
+        // Đăng ký: dùng hàm thông thường
+        result = await _authService.sendPhoneOTP(widget.phoneNumber);
+      }
       
       if (result.isSuccess) {
         // Reset countdown
@@ -344,6 +352,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mã OTP đã được gửi lại')),
         );
+        
+        // Nếu có verificationId mới, cập nhật (cần sửa để có thể update verificationId)
+        // Tạm thời giữ nguyên verificationId cũ
       } else if (result.errorMessage != null) {
         throw Exception(result.errorMessage);
       }
