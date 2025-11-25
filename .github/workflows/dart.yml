@@ -1,9 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Dart
+name: Flutter CI
 
 on:
   push:
@@ -14,24 +9,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    # Đặt working-directory chung cho tất cả các bước bên dưới
+    defaults:
+      run:
+        working-directory: ./herb_scan
 
     steps:
       - uses: actions/checkout@v4
       
-      # Cài đặt Dart SDK
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+      # Bước 1: Cài đặt Flutter SDK
+      - uses: subosito/flutter-action@v2 
+        with:
+          # CỐ ĐỊNH PHIÊN BẢN GIỐNG TRÊN MÁY BẠN
+          flutter-version: '3.29.2' 
+          channel: 'stable'
 
       - name: Install dependencies
-        # CHỈ ĐƯỜNG DẪN ĐÚNG:
-        working-directory: ./herb_scan  
-        run: dart pub get
+        run: flutter pub get
 
       - name: Analyze project source
-        # CHỈ ĐƯỜNG DẪN ĐÚNG:
-        working-directory: ./herb_scan  
-        run: dart analyze
+        # Thêm --no-fatal-infos để bỏ qua các cảnh báo không nghiêm trọng
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
-        # CHỈ ĐƯỜNG DẪN ĐÚNG:
-        working-directory: ./herb_scan  
-        run: dart test
+        run: flutter test
