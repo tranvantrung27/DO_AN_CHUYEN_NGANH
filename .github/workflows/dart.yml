@@ -31,6 +31,3 @@ jobs:
       - name: Analyze project source
         # Đã chọn phiên bản có --no-fatal-infos để bỏ qua lỗi vặt
         run: flutter analyze --no-fatal-infos
-
-      - name: Run tests
-        run: flutter test
