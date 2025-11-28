@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../constants/app_colors.dart';
 import '../../services/index.dart';
-import '../login/login_screen.dart';
+import '../../widgets/settings/index.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,70 +12,143 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
+  final SettingsLogoutHandler _logoutHandler = SettingsLogoutHandler();
+  bool _isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDarkModePreference();
+  }
+
+  Future<void> _loadDarkModePreference() async {
+    final isDarkMode = await DarkModeManager.loadDarkModePreference();
+    setState(() {
+      _isDarkMode = isDarkMode;
+    });
+  }
+
+  Future<void> _toggleDarkMode(bool value) async {
+    setState(() {
+      _isDarkMode = value;
+    });
+    // Lưu preference nhưng không kích hoạt dark mode
+    await DarkModeManager.saveDarkModePreference(value);
+    // Note: Dark mode không được kích hoạt trong main.dart
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = _authService.currentUser;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundCream,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(20.w),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
+              SizedBox(height: 20.h),
+              
+              // Thẻ Avatar + Tên người dùng
+              UserProfileCard(user: user),
+
+              SizedBox(height: 15.h),
+
+              // Thẻ: Thông tin cá nhân, Tin Đã lưu
+              SettingsCard(
                 children: [
-                  Icon(
-                    Icons.settings,
-                    size: 28.sp,
-                    color: AppColors.primaryGreen,
+                  SettingItem(
+                    icon: Icons.person_outline,
+                    title: 'Thông tin cá nhân',
+                    onTap: () {
+                      // TODO: Navigate to personal info screen
+                    },
                   ),
-                  SizedBox(width: 12.w),
-                  Text(
-                    'Cài đặt',
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryGreen,
-                    ),
+                  SettingItem(
+                    icon: Icons.bookmark_outline,
+                    title: 'Tin Đã lưu',
+                    onTap: () {
+                      // TODO: Navigate to saved articles screen
+                    },
                   ),
                 ],
               ),
-              
-              SizedBox(height: 40.h),
-              
-              // Settings content
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'Đây là trang Cài đặt',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      color: AppColors.primaryGreen,
-                      fontWeight: FontWeight.w500,
-                    ),
+
+              SizedBox(height: 15.h),
+
+              // Thẻ: Cài đặt thông báo, Giao diện sáng tối
+              SettingsCard(
+                children: [
+                  SettingItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Cài đặt thông báo',
+                    onTap: () {
+                      // TODO: Navigate to notification settings screen
+                    },
                   ),
-                ),
-              ),
-              
-              // Logout button
-              Container(
-                width: double.infinity,
-                height: 56.h,
-                child: ElevatedButton.icon(
-                  onPressed: _handleLogout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Đăng xuất'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    elevation: 0,
+                  SettingItemWithSwitch(
+                    icon: Icons.brightness_6_outlined,
+                    title: 'Giao diện sáng tối',
+                    value: _isDarkMode,
+                    onChanged: _toggleDarkMode, // Switch hoạt động nhưng không kích hoạt dark mode
                   ),
-                ),
+                ],
               ),
+
+              SizedBox(height: 15.h),
+
+              // Thẻ: Cách sử dụng, Gửi phản hồi, Thông tin giới thiệu, Chính sách bảo mật, Điều khoản & Điều kiện
+              SettingsCard(
+                children: [
+                  SettingItem(
+                    icon: Icons.help_outline,
+                    title: 'Cách sử dụng',
+                    onTap: () {
+                      // TODO: Navigate to usage guide screen
+                    },
+                  ),
+                  SettingItem(
+                    icon: Icons.feedback_outlined,
+                    title: 'Gửi phản hồi',
+                    onTap: () {
+                      // TODO: Navigate to feedback screen
+                    },
+                  ),
+                  SettingItem(
+                    icon: Icons.info_outline,
+                    title: 'Thông tin giới thiệu',
+                    onTap: () {
+                      // TODO: Navigate to about screen
+                    },
+                  ),
+                  SettingItem(
+                    icon: Icons.security_outlined,
+                    title: 'Chính sách bảo mật',
+                    onTap: () {
+                      // TODO: Navigate to privacy policy screen
+                    },
+                  ),
+                  SettingItem(
+                    icon: Icons.description_outlined,
+                    title: 'Điều khoản & Điều kiện',
+                    onTap: () {
+                      // TODO: Navigate to terms and conditions screen
+                    },
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 20.h),
+
+              // Nút Đăng xuất
+              LogoutButton(
+                onTap: () => _logoutHandler.handleLogout(context),
+              ),
+
+              SizedBox(height: 20.h),
             ],
           ),
         ),
@@ -85,60 +156,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _handleLogout() async {
-    // Show confirmation dialog
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xác nhận đăng xuất'),
-        content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Đăng xuất'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldLogout == true) {
-      try {
-        // Clear SharedPreferences để xóa toàn bộ dữ liệu local
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
-          print('✅ Cleared SharedPreferences');
-        } catch (e) {
-          print('⚠️ Error clearing SharedPreferences: $e');
-        }
-        
-        // Đăng xuất khỏi Firebase
-        await _authService.signOut();
-        print('✅ Signed out from Firebase');
-        
-        // Navigate về màn hình đăng nhập và clear toàn bộ navigation stack
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false, // Xóa tất cả routes trước đó
-          );
-        }
-      } catch (e) {
-        print('❌ Error during logout: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi đăng xuất: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
 }

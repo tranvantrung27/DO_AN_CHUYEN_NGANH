@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import '../../../../models/HealthyTab/healthy_article.dart';
+import '../../../models/HerbLibrary/herb_article.dart';
 import 'package:card_loading/card_loading.dart';
 
-class HealthyDetailScreen extends StatelessWidget {
-  final HealthyArticle article;
+class HerbDetailScreen extends StatelessWidget {
+  final HerbArticle article;
 
-  const HealthyDetailScreen({
+  const HerbDetailScreen({
     super.key,
     required this.article,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // App Bar với nút back
             SliverAppBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: theme.scaffoldBackgroundColor,
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(
@@ -104,7 +105,7 @@ class HealthyDetailScreen extends StatelessWidget {
 
   Widget _buildTitle() {
     return Text(
-      article.title,
+      article.name,
       style: TextStyle(
         color: Colors.black,
         fontSize: 24.sp,
@@ -118,7 +119,7 @@ class HealthyDetailScreen extends StatelessWidget {
 
   Widget _buildContent() {
     // Hiển thị nội dung từ Firebase
-    if (article.content.isEmpty) {
+    if (article.description.isEmpty) {
       return Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 40.h),
@@ -138,7 +139,7 @@ class HealthyDetailScreen extends StatelessWidget {
     // Sử dụng Markdown để hiển thị nội dung với formatting
     // Cho phép HTML tags như <u> cho underline
     return MarkdownBody(
-      data: article.content,
+      data: article.description,
       selectable: true, // Cho phép copy text
       styleSheet: MarkdownStyleSheet(
         p: TextStyle(

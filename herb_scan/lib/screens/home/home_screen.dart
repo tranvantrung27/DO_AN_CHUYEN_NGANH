@@ -29,8 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.backgroundCream,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               width: 42.w,
                               height: 42.h,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: theme.cardColor,
                                 borderRadius: BorderRadius.circular(6.r),
                                 boxShadow: [
                                   BoxShadow(

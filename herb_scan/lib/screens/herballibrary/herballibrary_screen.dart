@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../constants/app_colors.dart';
 import '../../widgets/herballibrary/herb_category_navigation.dart';
 import '../../widgets/herballibrary/herb_library_header.dart';
 import '../../widgets/cards/herb_card.dart';
@@ -10,6 +9,7 @@ import '../../services/HerbLibrary/herb_category_service.dart';
 import '../../models/HerbLibrary/herb_article.dart';
 import '../../constants/herb_categories.dart';
 import 'herb_search_screen.dart';
+import 'details/herb_detail_screen.dart';
 
 class HerbLibraryScreen extends StatefulWidget {
   final ValueNotifier<int>? tabChangeNotifier;
@@ -117,7 +117,7 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-      backgroundColor: AppColors.backgroundCream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: RefreshIndicator(
           key: _refreshIndicatorKey,
           onRefresh: _handleRefresh,
@@ -330,7 +330,12 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
                       category: herb.category,
                       date: herb.date,
                       onTap: () {
-                        // TODO: Navigate to herb detail screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HerbDetailScreen(article: herb),
+                          ),
+                        );
                       },
                       onBookmarkTap: () {
                         // TODO: Handle bookmark
@@ -422,7 +427,12 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
                                   category: relatedHerb.category,
                                   date: relatedHerb.date,
                                   onTap: () {
-                                    // TODO: Navigate to herb detail screen
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => HerbDetailScreen(article: relatedHerb),
+                                      ),
+                                    );
                                   },
                                   onBookmarkTap: () {
                                     // TODO: Handle bookmark

@@ -6,6 +6,7 @@ import '../../widgets/cards/herb_card.dart';
 import '../../services/HerbLibrary/herb_library_service.dart';
 import '../../models/HerbLibrary/herb_article.dart';
 import '../../utils/app_utils.dart';
+import 'details/herb_detail_screen.dart';
 
 class HerbSearchScreen extends StatefulWidget {
   const HerbSearchScreen({super.key});
@@ -107,7 +108,7 @@ class _HerbSearchScreenState extends State<HerbSearchScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.backgroundCream,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -268,7 +269,12 @@ class _HerbSearchScreenState extends State<HerbSearchScreen> {
             category: herb.category,
             date: herb.date,
             onTap: () {
-              // TODO: Navigate to herb detail screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HerbDetailScreen(article: herb),
+                ),
+              );
             },
             onBookmarkTap: () {
               // TODO: Handle bookmark

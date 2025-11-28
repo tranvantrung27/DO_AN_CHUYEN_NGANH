@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import '../../../../constants/app_colors.dart';
 import '../../../../models/DiseasesTab/disease_article.dart';
 import 'package:card_loading/card_loading.dart';
 
@@ -16,13 +15,13 @@ class DiseaseDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundCream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // App Bar với nút back
             SliverAppBar(
-              backgroundColor: AppColors.backgroundCream,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(

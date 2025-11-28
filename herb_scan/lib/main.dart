@@ -57,6 +57,8 @@ class _MainAppState extends State<MainApp> {
               Theme.of(context).textTheme,
             ),
           ),
+          // Dark theme disabled - chỉ dùng light theme
+          themeMode: ThemeMode.light,
           home: const AuthWrapper(),
           debugShowCheckedModeBanner: false,
           builder: (context, widget) {
