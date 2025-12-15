@@ -155,7 +155,7 @@ class _AnimatedDotIndicatorState extends State<AnimatedDotIndicator>
                     shape: BoxShape.circle,
                     boxShadow: isActive && widget.showShadow ? [
                       BoxShadow(
-                        color: widget.activeColor.withOpacity(AppAnimations.shadowOpacity),
+                        color: widget.activeColor.withValues(alpha: AppAnimations.shadowOpacity),
                         blurRadius: AppAnimations.shadowMediumBlur,
                         offset: AppAnimations.shadowOffset,
                       ),
@@ -166,7 +166,7 @@ class _AnimatedDotIndicatorState extends State<AnimatedDotIndicator>
                           scale: _bounceAnimations[index].value,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(AppAnimations.overlayOpacity),
+                              color: Colors.white.withValues(alpha: AppAnimations.overlayOpacity),
                               shape: BoxShape.circle,
                             ),
                           ),

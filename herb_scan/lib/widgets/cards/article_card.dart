@@ -123,6 +123,7 @@ class ArticleCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Dòng 1: Thời gian
                   if (dateText.isNotEmpty)
@@ -136,30 +137,27 @@ class ArticleCard extends StatelessWidget {
                         height: 1.50,
                         letterSpacing: 0.12,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   SizedBox(height: 4.h),
                   // Dòng 2: Tiêu đề chính - có thể nhiều dòng, hiển thị "..." khi dài
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SizedBox(
-                        width: constraints.maxWidth,
-                        child: Text(
-                          title,
-                          maxLines: 3, // Cho phép tối đa 3 dòng
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: true,
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w400,
-                            height: 1.50,
-                            letterSpacing: 0.12,
-                          ),
-                        ),
-                      );
-                    },
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 2, // Giảm từ 3 xuống 2 để tránh overflow
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        height: 1.50,
+                        letterSpacing: 0.12,
+                      ),
+                    ),
                   ),
                   // Dòng 3: Tiêu đề phụ (chỉ hiển thị nếu có)
                   if (subtitle.isNotEmpty) ...[
@@ -179,7 +177,7 @@ class ArticleCard extends StatelessWidget {
                     ),
                   ],
                   // Spacer để đẩy phần dưới xuống
-                  Expanded(child: Container()),
+                  const Spacer(),
                   // Dòng 4: Logo | Thời gian đăng
                   Row(
                     children: [
@@ -227,6 +225,8 @@ class ArticleCard extends StatelessWidget {
                             height: 1.50,
                             letterSpacing: 0.12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),

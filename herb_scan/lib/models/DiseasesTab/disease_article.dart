@@ -41,9 +41,7 @@ class DiseaseArticle {
     DateTime? createdAt = (data['createdAt'] as Timestamp?)?.toDate();
     
     // Nếu chưa có createdAt, tự động tạo từ thời gian hiện tại
-    if (createdAt == null) {
-      createdAt = DateTime.now();
-    }
+    createdAt ??= DateTime.now();
     
     return DiseaseArticle(
       id: doc.id,

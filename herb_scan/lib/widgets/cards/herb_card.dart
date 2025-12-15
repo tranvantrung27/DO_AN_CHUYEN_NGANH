@@ -214,7 +214,7 @@ class HerbCard extends StatelessWidget {
             // Bookmark icon
             GestureDetector(
               onTap: onBookmarkTap,
-              child: Container(
+              child: SizedBox(
                 width: 18.36.w,
                 height: 21.19.h,
                 child: Icon(

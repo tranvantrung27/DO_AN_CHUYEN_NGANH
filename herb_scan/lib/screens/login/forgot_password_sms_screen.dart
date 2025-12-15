@@ -100,7 +100,7 @@ class _ForgotPasswordSMSScreenState extends State<ForgotPasswordSMSScreen> {
                     SizedBox(height: 16.h),
                     
                     // Phone Input Section
-                    Container(
+                    SizedBox(
                       width: double.infinity,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -225,13 +225,16 @@ class _ForgotPasswordSMSScreenState extends State<ForgotPasswordSMSScreen> {
       final checkResult = await _authService.isPhoneNumberRegisteredForReset(formattedPhone);
       
       // Hide loading
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
       
       if (checkResult.isSuccess) {
         // Số điện thoại đã đăng ký, gửi SMS và chuyển đến màn hình OTP
         final smsResult = await _authService.resetPasswordBySMS(formattedPhone);
         
         if (smsResult.isSuccess) {
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -242,27 +245,31 @@ class _ForgotPasswordSMSScreenState extends State<ForgotPasswordSMSScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Không thể gửi SMS: ${smsResult.errorMessage}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Không thể gửi SMS: ${smsResult.errorMessage}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } else {
+        if (!mounted) return;
         // Số điện thoại chưa đăng ký, hiển thị thông báo
         _showPhoneNotRegisteredDialog(formattedPhone);
       }
     } catch (e) {
       // Hide loading
-      Navigator.pop(context);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Có lỗi xảy ra: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Có lỗi xảy ra: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

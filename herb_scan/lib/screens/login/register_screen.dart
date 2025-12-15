@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../constants/index.dart';
 import '../../widgets/index.dart';
-import '../../widgets/common/register_fields.dart';
-import '../../widgets/common/social_login_button.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
 import '../../models/index.dart';
@@ -377,14 +375,14 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   void _handleAppleLogin() {
-    // TODO: Implement Apple login
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Apple login chưa được hỗ trợ')),
     );
   }
 
   void _handleFacebookLogin() {
-    // TODO: Implement Facebook login
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Facebook login chưa được hỗ trợ')),
     );

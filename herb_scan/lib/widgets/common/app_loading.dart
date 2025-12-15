@@ -42,13 +42,13 @@ class AppLoading extends StatelessWidget {
   });
 
   /// Factory cho loading đơn giản
-  factory AppLoading.simple({
+  const factory AppLoading.simple({
     double? size,
     Color? color,
   }) = _AppLoadingSimple;
 
   /// Factory cho loading với text
-  factory AppLoading.withText({
+  const factory AppLoading.withText({
     String? text,
     AppLoadingType? type,
     double? size,
@@ -57,7 +57,7 @@ class AppLoading extends StatelessWidget {
   }) = _AppLoadingWithText;
 
   /// Factory cho page loading
-  factory AppLoading.page({
+  const factory AppLoading.page({
     String? text,
     AppLoadingType? type,
   }) = _AppLoadingPage;
@@ -305,13 +305,12 @@ class _AppLoadingWithText extends AppLoading {
     AppLoadingType? type,
     double? size,
     Color? color,
-    TextStyle? textStyle,
+    super.textStyle,
   }) : super(
     text: text ?? 'Đang tải...',
     type: type ?? AppLoadingType.dots,
     size: size ?? 40,
     color: color ?? AppColors.primaryGreen,
-    textStyle: textStyle,
   );
 }
 

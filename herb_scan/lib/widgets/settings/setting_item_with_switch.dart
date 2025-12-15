@@ -1,66 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'custom_switch.dart';
+import '../../constants/app_colors.dart';
+import 'custom_switch_tile.dart';
 
-/// Widget hiển thị một item cài đặt có switch
+/// Widget hiển thị một item cài đặt có switch với icon trong khung tròn màu
+/// Sử dụng CustomSwitchTile bên trong
 class SettingItemWithSwitch extends StatelessWidget {
   final IconData icon;
   final String title;
   final bool value;
-  final ValueChanged<bool>? onChanged; // Nullable để có thể disable
+  final ValueChanged<bool>? onChanged;
+  final Color? iconColor; // Màu nền của icon
 
   const SettingItemWithSwitch({
     super.key,
     required this.icon,
     required this.title,
     required this.value,
-    this.onChanged, // Optional - nếu null thì switch bị disable
+    this.onChanged,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textColor = theme.textTheme.bodyLarge?.color ?? 
-                      (theme.brightness == Brightness.dark 
-                          ? Colors.white 
-                          : const Color(0xFF333333));
+    final iconBgColor = iconColor ?? AppColors.info;
     
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 24.w,
-                height: 24.w,
-                child: Icon(
-                  icon,
-                  size: 24.sp,
-                  color: textColor,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                title,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 17.sp,
-                  fontFamily: 'Roboto',
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.17,
-                ),
-              ),
-            ],
-          ),
-          CustomSwitch(
-            value: value,
-            onChanged: onChanged, // Nếu null thì switch sẽ không hoạt động
-          ),
-        ],
-      ),
+    return CustomSwitchTile(
+      icon: icon,
+      title: title,
+      iconColor: iconBgColor,
+      value: value,
+      onChanged: onChanged,
     );
   }
 }
-

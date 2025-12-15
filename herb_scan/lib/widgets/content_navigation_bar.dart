@@ -54,11 +54,11 @@ class _ContentNavigationBarState extends State<ContentNavigationBar> {
     final List<double> tabLefts = [0, 66.w, 151.w];
     final List<double> tabWidths = [widthNews, widthDisease, widthHealth];
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 50.h,
       child: Center(
-        child: Container(
+        child: SizedBox(
           width: 229.w,
           height: 30.h,
           child: Stack(

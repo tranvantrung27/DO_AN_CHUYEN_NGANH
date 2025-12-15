@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -995,7 +996,7 @@ class AuthService {
           });
         } catch (firestoreError) {
           // Log lỗi Firestore nhưng không fail toàn bộ operation
-          print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+          debugPrint('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
         }
 
         return AuthResult.success(null);
@@ -1014,7 +1015,7 @@ class AuthService {
           } catch (firestoreError) {
             // Log lỗi Firestore nhưng không fail toàn bộ operation
             // Vì password đã được update trong Firebase Auth rồi
-            print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+            debugPrint('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
           }
 
           return AuthResult.success(null);
@@ -1039,7 +1040,7 @@ class AuthService {
                   'updatedAt': FieldValue.serverTimestamp(),
                 });
               } catch (firestoreError) {
-                print('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
+                debugPrint('Warning: Không thể cập nhật password trong Firestore: $firestoreError');
               }
 
               return AuthResult.success(null);

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../constants/app_colors.dart';
 
-/// Widget container chứa các setting items
+/// Widget container chứa các setting items với shadow đẹp
 class SettingsCard extends StatelessWidget {
   final List<Widget> children;
   final double? borderRadius;
@@ -14,15 +15,20 @@ class SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-      decoration: ShapeDecoration(
-        color: theme.cardTheme.color ?? theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular((borderRadius ?? 5).r),
-        ),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite,
+        borderRadius: BorderRadius.circular((borderRadius ?? 12).r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowLight,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         children: _buildItemsWithDividers(context),
@@ -31,7 +37,6 @@ class SettingsCard extends StatelessWidget {
   }
 
   List<Widget> _buildItemsWithDividers(BuildContext context) {
-    final theme = Theme.of(context);
     final List<Widget> items = [];
     
     for (int i = 0; i < children.length; i++) {
@@ -43,7 +48,8 @@ class SettingsCard extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: theme.dividerColor,
+            color: AppColors.borderLight,
+            indent: 52.w, // Indent để align với text (40 icon + 12 spacing)
           ),
         );
       }
@@ -52,4 +58,3 @@ class SettingsCard extends StatelessWidget {
     return items;
   }
 }
-

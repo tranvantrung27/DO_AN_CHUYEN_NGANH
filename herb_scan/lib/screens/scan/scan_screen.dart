@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../constants/app_colors.dart';
+import '../../services/scan/scan_service.dart';
+import '../../widgets/scan/index.dart';
+import 'scan_result_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -10,6 +15,138 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
+  final ImagePicker _imagePicker = ImagePicker();
+  final ScanService _scanService = ScanService();
+  ScanLoadingStage _loadingStage = ScanLoadingStage.none;
+  String? _previewImagePath;
+
+  Future<void> _captureAndScan() async {
+    // Kiểm tra quyền camera
+    final cameraStatus = await Permission.camera.status;
+    if (!cameraStatus.isGranted) {
+      final result = await Permission.camera.request();
+      if (!result.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cần quyền truy cập camera để quét lá cây'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    try {
+      // Mở camera của máy để chụp ảnh
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 90,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      // Nếu người dùng hủy hoặc không chọn ảnh, không làm gì
+      if (image == null) return;
+
+      // Bắt đầu quá trình scan
+      await _startScanning(image.path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chụp ảnh: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (image == null) return;
+
+      // Bắt đầu quá trình scan
+      await _startScanning(image.path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chọn ảnh: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _startScanning(String imagePath) async {
+    try {
+      // Hiển thị ảnh và bắt đầu loading
+      setState(() {
+        _previewImagePath = imagePath;
+        _loadingStage = ScanLoadingStage.analyzing;
+      });
+
+      // Stage 1: AI đang phân tích (tăng thời gian lên 4 giây)
+      await Future.delayed(const Duration(seconds: 4));
+      if (!mounted) return;
+
+      // Stage 2: Đang nhận dạng
+      setState(() {
+        _loadingStage = ScanLoadingStage.identifying;
+      });
+
+      // Đợi thêm 3 giây để hiển thị hiệu ứng đánh chữ và 3 chấm
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+
+      // Thực hiện scan thực tế
+      final result = await _scanService.scanImage(imagePath);
+
+      if (!mounted) return;
+
+      // Điều hướng đến màn hình kết quả
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanResultScreen(result: result),
+        ),
+      );
+
+      // Reset sau khi quay lại
+      if (mounted) {
+        setState(() {
+          _loadingStage = ScanLoadingStage.none;
+          _previewImagePath = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingStage = ScanLoadingStage.none;
+          _previewImagePath = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi quét: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -20,100 +157,17 @@ class _ScanScreenState extends State<ScanScreen> {
           padding: EdgeInsets.all(20.w),
           child: Column(
             children: [
-              // Header
-              Row(
-                children: [
-                  Icon(
-                    Icons.camera_alt,
-                    size: 28.sp,
-                    color: AppColors.primaryGreen,
-                  ),
-                  SizedBox(width: 12.w),
-                  Text(
-                    'Quét lá cây',
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                ],
-              ),
-              
+              const ScanHeader(),
               SizedBox(height: 40.h),
-              
-              // Camera preview area
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: AppColors.primaryGreen.withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.camera_alt_outlined,
-                        size: 80.sp,
-                        color: AppColors.primaryGreen.withOpacity(0.5),
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        'Chạm để bắt đầu quét',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ScanPreviewArea(
+                loadingStage: _loadingStage,
+                previewImagePath: _previewImagePath,
               ),
-              
               SizedBox(height: 30.h),
-              
-              // Scan button
-              Container(
-                width: double.infinity,
-                height: 56.h,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Implement camera functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Tính năng quét sẽ được triển khai'),
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.camera_alt, size: 20.sp),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Bắt đầu quét',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ScanActionButtons(
+                isScanning: _loadingStage != ScanLoadingStage.none,
+                onGalleryTap: _pickFromGallery,
+                onCaptureTap: _captureAndScan,
               ),
             ],
           ),

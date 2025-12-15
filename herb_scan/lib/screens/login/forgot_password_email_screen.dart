@@ -97,7 +97,7 @@ class _ForgotPasswordEmailScreenState extends State<ForgotPasswordEmailScreen> {
                     SizedBox(height: 16.h),
                     
                     // Email Input Section
-                    Container(
+                    SizedBox(
                       width: double.infinity,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -199,7 +199,7 @@ class _ForgotPasswordEmailScreenState extends State<ForgotPasswordEmailScreen> {
       return;
     }
     
-    // TODO: Implement email password reset
+
     print('Reset password for email: $email');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

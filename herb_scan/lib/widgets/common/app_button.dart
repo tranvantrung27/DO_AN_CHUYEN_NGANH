@@ -82,7 +82,7 @@ class AppButton extends StatefulWidget {
   });
 
   /// Factory constructor cho primary button
-  factory AppButton.primary({
+  const factory AppButton.primary({
     Key? key,
     required String text,
     VoidCallback? onPressed,
@@ -94,7 +94,7 @@ class AppButton extends StatefulWidget {
   }) = _AppButtonPrimary;
 
   /// Factory constructor cho secondary button
-  factory AppButton.secondary({
+  const factory AppButton.secondary({
     Key? key,
     required String text,
     VoidCallback? onPressed,
@@ -106,7 +106,7 @@ class AppButton extends StatefulWidget {
   }) = _AppButtonSecondary;
 
   /// Factory constructor cho outline button
-  factory AppButton.outline({
+  const factory AppButton.outline({
     Key? key,
     required String text,
     VoidCallback? onPressed,
@@ -118,7 +118,7 @@ class AppButton extends StatefulWidget {
   }) = _AppButtonOutline;
 
   /// Factory constructor cho text button
-  factory AppButton.text({
+  const factory AppButton.text({
     Key? key,
     required String text,
     VoidCallback? onPressed,
@@ -129,7 +129,7 @@ class AppButton extends StatefulWidget {
   }) = _AppButtonText;
 
   /// Factory constructor cho danger button
-  factory AppButton.danger({
+  const factory AppButton.danger({
     Key? key,
     required String text,
     VoidCallback? onPressed,
@@ -189,7 +189,7 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
   ButtonStyle get _primaryStyle => ElevatedButton.styleFrom(
     backgroundColor: AppColors.primaryGreen,
     foregroundColor: Colors.white,
-    disabledBackgroundColor: AppColors.primaryGreen.withOpacity(AppAnimations.disabledOpacity),
+    disabledBackgroundColor: AppColors.primaryGreen.withValues(alpha: AppAnimations.disabledOpacity),
     elevation: widget.elevation,
     padding: _padding,
     shape: RoundedRectangleBorder(

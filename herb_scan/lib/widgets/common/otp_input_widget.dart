@@ -107,7 +107,7 @@ class _OTPInputWidgetState extends State<OTPInputWidget> {
               border: InputBorder.none,
               hintText: widget.hintText ?? '•',
               hintStyle: TextStyle(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 fontSize: 24.sp,
               ),
             ),

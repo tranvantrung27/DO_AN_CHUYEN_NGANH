@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kReleaseMode, kDebugMode, debugPrint;
 import 'constants/index.dart';
 import 'widgets/auth_wrapper.dart';
 import 'firebase_options.dart';
@@ -16,12 +16,35 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // App Check: debug dùng Debug provider, release dùng Play Integrity
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: kReleaseMode
-        ? AndroidProvider.playIntegrity
-        : AndroidProvider.debug,
-  );
+  // App Check: Chỉ kích hoạt trong release mode hoặc khi không có lỗi
+  // Trong debug mode, bỏ qua App Check để tránh lỗi token
+  try {
+    if (kReleaseMode) {
+      // Release mode: dùng Play Integrity
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.playIntegrity,
+      );
+    } else {
+      // Debug mode: thử dùng Debug provider, nếu lỗi thì bỏ qua
+      try {
+        await FirebaseAppCheck.instance.activate(
+          androidProvider: AndroidProvider.debug,
+        );
+      } catch (e) {
+        // Nếu App Check lỗi trong debug mode, bỏ qua để app vẫn chạy được
+        if (kDebugMode) {
+          debugPrint('⚠️ Firebase App Check không khả dụng trong debug mode: $e');
+          debugPrint('⚠️ App sẽ chạy mà không có App Check (chỉ ảnh hưởng debug)');
+        }
+      }
+    }
+  } catch (e) {
+    // Nếu App Check hoàn toàn không hoạt động, bỏ qua để app vẫn chạy
+    if (kDebugMode) {
+      debugPrint('⚠️ Firebase App Check không thể kích hoạt: $e');
+      debugPrint('⚠️ App sẽ chạy mà không có App Check');
+    }
+  }
   
   runApp(const MainApp());
 }
@@ -63,9 +86,14 @@ class _MainAppState extends State<MainApp> {
           debugShowCheckedModeBanner: false,
           builder: (context, widget) {
             // Đảm bảo text scale không vượt quá 1.3
+            final currentScaler = MediaQuery.of(context).textScaler;
+            final clampedScaler = currentScaler.clamp(
+              minScaleFactor: 0.8,
+              maxScaleFactor: 1.3,
+            );
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.3),
+                textScaler: clampedScaler,
               ),
               child: widget!,
             );

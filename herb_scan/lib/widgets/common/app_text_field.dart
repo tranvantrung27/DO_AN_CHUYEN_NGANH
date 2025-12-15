@@ -139,7 +139,7 @@ class _AppTextFieldState extends State<AppTextField> {
             boxShadow: [
               if (_isFocused)
                 BoxShadow(
-                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

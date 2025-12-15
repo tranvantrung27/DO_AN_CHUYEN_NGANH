@@ -61,7 +61,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Positioned(
             left: 50.w,
             top: 70.h,
-            child: Container(
+            child: SizedBox(
               width: 330.w,
               height: 330.h,
               child: Image.asset(

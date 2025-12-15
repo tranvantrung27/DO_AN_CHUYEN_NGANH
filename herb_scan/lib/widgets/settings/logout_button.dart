@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../constants/app_colors.dart';
 
-/// Widget nút đăng xuất
+/// Widget nút đăng xuất với màu đỏ nhạt
 class LogoutButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -14,33 +15,36 @@ class LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
-      decoration: ShapeDecoration(
-        color: const Color(0xFF3AAF3D),
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            width: 1,
-            color: Colors.black.withOpacity(0.15),
-          ),
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1), // Màu đỏ nhạt
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: InkWell(
         onTap: onTap,
-        child: Center(
-          child: Text(
-            'Đăng xuất',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17.sp,
-              fontFamily: 'Roboto',
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.17,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.logout,
+              size: 20.sp,
+              color: AppColors.error,
             ),
-          ),
+            SizedBox(width: 8.w),
+            Text(
+              'Đăng xuất',
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 16.sp,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-

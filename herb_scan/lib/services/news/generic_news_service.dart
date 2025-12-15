@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import '../../models/news/index.dart';
@@ -97,7 +98,7 @@ class GenericNewsService {
       final entries = items.isNotEmpty ? items : doc.findAllElements('entry').toList();
 
       return entries.map((node) {
-        final title = (node.getElement('title')?.text ?? '').trim();
+        final title = (node.getElement('title')?.innerText ?? '').trim();
         final link = _extractLink(node);
         final pub = _extractPublishedDate(node);
         final image = _extractImage(node);
@@ -112,7 +113,7 @@ class GenericNewsService {
         );
       }).where((a) => a.title.isNotEmpty && a.link.isNotEmpty).toList();
     } catch (e) {
-      print('Error parsing RSS/Atom for ${site.name}: $e');
+      debugPrint('Error parsing RSS/Atom for ${site.name}: $e');
       return [];
     }
   }
@@ -122,11 +123,11 @@ class GenericNewsService {
     // RSS: <link>url</link> hoặc <link href="url"/>
     final linkElement = node.getElement('link');
     if (linkElement != null) {
-      return linkElement.getAttribute('href') ?? linkElement.text;
+      return linkElement.getAttribute('href') ?? linkElement.innerText;
     }
     
     // Fallback: tìm guid
-    final guid = node.findElements('guid').map((e) => e.text).firstWhere(
+    final guid = node.findElements('guid').map((e) => e.innerText).firstWhere(
       (text) => text.isNotEmpty, 
       orElse: () => '',
     );
@@ -136,9 +137,9 @@ class GenericNewsService {
 
   /// Extract published date từ RSS/Atom node
   String? _extractPublishedDate(XmlElement node) {
-    return node.getElement('pubDate')?.text ??
-           node.getElement('published')?.text ??
-           node.getElement('updated')?.text;
+    return node.getElement('pubDate')?.innerText ??
+           node.getElement('published')?.innerText ??
+           node.getElement('updated')?.innerText;
   }
 
   /// Extract image từ RSS/Atom node
@@ -163,7 +164,7 @@ class GenericNewsService {
     }
 
     // Description image (fallback)
-    final description = node.getElement('description')?.text ?? '';
+    final description = node.getElement('description')?.innerText ?? '';
     final imgMatch = RegExp(r'<img[^>]+src="([^"]+)"').firstMatch(description);
     if (imgMatch != null) {
       return imgMatch.group(1) ?? '';

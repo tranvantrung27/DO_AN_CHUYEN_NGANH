@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../../constants/index.dart';
 import '../../widgets/index.dart';
-import '../../widgets/common/otp_input_widget.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
 import '../../models/index.dart';
@@ -349,9 +348,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
         });
         _startCountdown();
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mã OTP đã được gửi lại')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Mã OTP đã được gửi lại')),
+          );
+        }
         
         // Nếu có verificationId mới, cập nhật (cần sửa để có thể update verificationId)
         // Tạm thời giữ nguyên verificationId cũ

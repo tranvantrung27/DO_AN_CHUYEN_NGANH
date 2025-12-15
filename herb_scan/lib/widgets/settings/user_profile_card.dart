@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../constants/app_colors.dart';
+import '../../screens/settings/details/personal_info_screen.dart';
 
-/// Widget hiển thị thông tin người dùng (avatar + tên)
-class UserProfileCard extends StatelessWidget {
+/// Widget hiển thị thông tin người dùng (avatar + tên + email)
+class UserProfileCard extends StatefulWidget {
   final User? user;
 
   const UserProfileCard({
@@ -11,85 +15,188 @@ class UserProfileCard extends StatelessWidget {
     required this.user,
   });
 
-  String _getUserName(User? user) {
-    if (user == null) return 'Người dùng';
-    
-    // Lấy tên từ email (bỏ @gmail.com và phần sau)
-    if (user.email != null) {
-      return user.email!.split('@')[0];
-    }
-    
-    // Nếu không có email, dùng displayName
-    return user.displayName ?? 'Người dùng';
+  @override
+  State<UserProfileCard> createState() => _UserProfileCardState();
+}
+
+class _UserProfileCardState extends State<UserProfileCard> {
+  String? _displayName;
+  String? _email;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
   }
 
-  String? _getUserAvatarUrl(User? user) {
-    return user?.photoURL;
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+    
+    String? displayName;
+    String? email;
+    
+    // Ưu tiên lấy từ Firebase Auth
+    if (widget.user != null) {
+      displayName = widget.user!.displayName;
+      email = widget.user!.email;
+    }
+    
+    // Nếu không có, lấy từ Firestore
+    if (displayName == null || displayName.isEmpty || email == null) {
+      try {
+        String? userId = widget.user?.uid;
+        if (userId == null) {
+          // Lấy từ SharedPreferences nếu đăng nhập bằng số điện thoại
+          final prefs = await SharedPreferences.getInstance();
+          userId = prefs.getString('current_user_id');
+        }
+        
+        if (userId != null) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
+          
+          if (userDoc.exists) {
+            final userData = userDoc.data();
+            displayName = displayName ?? userData?['displayName']?.toString();
+            email = email ?? userData?['email']?.toString();
+          }
+        }
+      } catch (e) {
+        print('Error loading user data from Firestore: $e');
+      }
+    }
+    
+    // Nếu vẫn không có, lấy từ email hoặc phoneNumber
+    if (displayName == null || displayName.isEmpty) {
+      if (email != null && email.isNotEmpty) {
+        displayName = email.split('@')[0];
+      } else {
+        // Lấy từ Firestore phoneNumber nếu có
+        try {
+          String? userId = widget.user?.uid;
+          if (userId == null) {
+            final prefs = await SharedPreferences.getInstance();
+            userId = prefs.getString('current_user_id');
+          }
+          
+          if (userId != null) {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(userId)
+                .get();
+            
+            if (userDoc.exists) {
+              final userData = userDoc.data();
+              displayName = userData?['phoneNumber']?.toString() ?? 'Người dùng';
+            }
+          }
+        } catch (e) {
+          displayName = 'Người dùng';
+        }
+      }
+    }
+    
+    setState(() {
+      _displayName = displayName ?? 'Người dùng';
+      _email = email ?? '';
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final userName = _getUserName(user);
-    final avatarUrl = _getUserAvatarUrl(user);
+    final userName = _isLoading ? 'Đang tải...' : (_displayName ?? 'Người dùng');
+    final avatarUrl = widget.user?.photoURL;
+    final userEmail = _email ?? '';
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-      decoration: ShapeDecoration(
-        color: theme.cardTheme.color ?? theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
+    return InkWell(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PersonalInfoScreen(),
+          ),
+        );
+        // Reload lại để cập nhật UI khi quay lại
+        _loadUserData();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowLight,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+              spreadRadius: 0,
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 52.w,
-            height: 52.w,
-            decoration: ShapeDecoration(
-              image: avatarUrl != null
-                  ? DecorationImage(
-                      image: NetworkImage(avatarUrl),
-                      fit: BoxFit.cover,
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              width: 56.w,
+              height: 56.w,
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen,
+                shape: BoxShape.circle,
+                image: avatarUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(avatarUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: avatarUrl == null
+                  ? Icon(
+                      Icons.person,
+                      size: 32.sp,
+                      color: AppColors.backgroundWhite,
                     )
                   : null,
-              color: avatarUrl == null 
-                  ? (theme.brightness == Brightness.dark 
-                      ? Colors.grey[700] 
-                      : Colors.grey[300]) 
-                  : null,
-              shape: const OvalBorder(),
             ),
-            child: avatarUrl == null
-                ? Icon(
-                    Icons.person,
-                    size: 32.sp,
-                    color: theme.brightness == Brightness.dark
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
-                  )
-                : null,
-          ),
-          SizedBox(width: 12.w),
-          // Tên người dùng
-          Text(
-            userName,
-            style: TextStyle(
-              color: theme.textTheme.bodyLarge?.color ?? 
-                    (theme.brightness == Brightness.dark 
-                        ? Colors.white 
-                        : const Color(0xFF333333)),
-              fontSize: 17.sp,
-              fontFamily: 'Roboto',
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.17,
+            SizedBox(width: 12.w),
+            // Tên và email
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: TextStyle(
+                      color: AppColors.textPrimaryDark,
+                      fontSize: 18.sp,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (userEmail.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      userEmail,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14.sp,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w400,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
-

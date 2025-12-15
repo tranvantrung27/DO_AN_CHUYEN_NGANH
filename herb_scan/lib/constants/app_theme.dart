@@ -319,7 +319,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: Color(0xFF1E1E1E),

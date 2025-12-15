@@ -29,7 +29,7 @@ class AuthButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3AAF3D).withOpacity(0.3),
+            color: const Color(0xFF3AAF3D).withValues(alpha: 0.3),
             blurRadius: 8.r,
             offset: Offset(0, 4.h),
           ),
@@ -81,7 +81,7 @@ class AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

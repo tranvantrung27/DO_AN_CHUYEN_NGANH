@@ -65,7 +65,7 @@ class _NotificationTabNavigationState extends State<NotificationTabNavigation> {
       height: 50.h,
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Center(
-        child: Container(
+        child: SizedBox(
           width: widthAll + widthDisease + widthHealth + 40.w,
           height: 30.h,
           child: Stack(

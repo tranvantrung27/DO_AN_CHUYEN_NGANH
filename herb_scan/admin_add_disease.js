@@ -296,9 +296,16 @@ function switchTab(tab) {
   const titles = {
     'diseases': '📋 Danh sách bài viết - Các bệnh',
     'healthy': '📋 Danh sách bài viết - Sống khỏe',
-    'herballibrary': '📚 Danh sách bài thuốc - Kho thuốc'
+    'herballibrary': '📚 Danh sách bài thuốc - Kho thuốc',
+    'feedback': '💬 Danh sách phản hồi từ người dùng'
   };
   document.getElementById('listTitle').textContent = titles[tab] || titles['diseases'];
+  
+  // Ẩn/hiện nút "Đăng bài mới" dựa trên tab
+  const addButton = document.querySelector('.list-header .btn-primary');
+  if (addButton) {
+    addButton.style.display = tab === 'feedback' ? 'none' : 'block';
+  }
   
       // Show/hide category, date, related articles, tags, and content fields based on tab
       const categoryGroup = document.getElementById('categoryGroup');
@@ -364,7 +371,12 @@ function showList() {
     manageCategoriesBtn.style.display = currentTab === 'herballibrary' ? 'block' : 'none';
   }
   
-  loadArticles();
+  // Load data based on current tab
+  if (currentTab === 'feedback') {
+    loadFeedback();
+  } else {
+    loadArticles();
+  }
 }
 
 // Show manage categories view
@@ -1620,6 +1632,249 @@ function checkAuthState() {
     }
   });
   */
+}
+
+// ==================== FEEDBACK MANAGEMENT ====================
+
+// Load feedback list
+function loadFeedback() {
+  const listContainer = document.getElementById('articleList');
+  listContainer.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Đang tải...</div>';
+  
+  db.collection('feedback')
+    .get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        listContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div>Chưa có phản hồi nào</div>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort by createdAt (newest first)
+      const docs = snapshot.docs.sort((a, b) => {
+        const aTime = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+        const bTime = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+        return bTime - aTime; // Descending order
+      });
+      
+      let html = '';
+      docs.forEach(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt ? data.createdAt.toDate().toLocaleString('vi-VN') : 'Chưa có';
+        const status = data.status || 'pending';
+        const statusText = {
+          'pending': '⏳ Chờ xử lý',
+          'read': '👁️ Đã đọc',
+          'replied': '✅ Đã phản hồi',
+          'resolved': '✔️ Đã giải quyết'
+        }[status] || status;
+        const statusColor = {
+          'pending': '#FF9800',
+          'read': '#2196F3',
+          'replied': '#4CAF50',
+          'resolved': '#3AAF3D'
+        }[status] || '#666';
+        
+        const content = data.content || 'Không có nội dung';
+        const userDisplayName = data.userDisplayName || data.userEmail || 'Người dùng';
+        const hasImages = data.imageUrls && data.imageUrls.length > 0;
+        const hasReply = data.replyMessage && data.replyMessage.trim().length > 0;
+        
+        html += `
+          <div class="article-item" onclick="showFeedbackDetail('${doc.id}')" style="cursor: pointer;">
+            <div class="article-info" style="width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div class="article-title">👤 ${userDisplayName}</div>
+                <span style="background: ${statusColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                  ${statusText}
+                </span>
+              </div>
+              <div class="article-subtitle" style="margin-bottom: 8px; max-height: 60px; overflow: hidden;">
+                ${content.length > 100 ? content.substring(0, 100) + '...' : content}
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div class="article-meta">📅 ${createdAt}</div>
+                ${hasImages ? '<div class="article-meta">📷 Có ảnh</div>' : ''}
+                ${hasReply ? '<div class="article-meta" style="color: #4CAF50;">💬 Đã phản hồi</div>' : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+    })
+    .catch(error => {
+      listContainer.innerHTML = `<div class="status error">❌ Lỗi: ${error.message}</div>`;
+    });
+}
+
+// Show feedback detail and reply form
+function showFeedbackDetail(feedbackId) {
+  currentView = 'detail';
+  viewingDocId = feedbackId;
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('formView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+  
+  const detailContent = document.getElementById('detailContent');
+  detailContent.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Đang tải...</div>';
+  
+  db.collection('feedback').doc(feedbackId).get().then(doc => {
+    if (!doc.exists) {
+      detailContent.innerHTML = '<div class="status error">❌ Không tìm thấy phản hồi</div>';
+      return;
+    }
+    
+    const data = doc.data();
+    const createdAt = data.createdAt ? data.createdAt.toDate().toLocaleString('vi-VN') : 'Chưa có';
+    const repliedAt = data.repliedAt ? data.repliedAt.toDate().toLocaleString('vi-VN') : '';
+    const status = data.status || 'pending';
+    const statusText = {
+      'pending': '⏳ Chờ xử lý',
+      'read': '👁️ Đã đọc',
+      'replied': '✅ Đã phản hồi',
+      'resolved': '✔️ Đã giải quyết'
+    }[status] || status;
+    
+    let imagesHtml = '';
+    if (data.imageUrls && data.imageUrls.length > 0) {
+      imagesHtml = '<div style="margin-top: 16px;"><strong>Ảnh đính kèm:</strong><div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">';
+      data.imageUrls.forEach(url => {
+        imagesHtml += `<img src="${url}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer;" onclick="window.open('${url}', '_blank')">`;
+      });
+      imagesHtml += '</div></div>';
+    }
+    
+    let replyHtml = '';
+    if (data.replyMessage && data.replyMessage.trim().length > 0) {
+      replyHtml = `
+        <div style="background: #E8F5E9; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #4CAF50;">
+          <div style="font-weight: bold; color: #2E7D32; margin-bottom: 8px;">💬 Phản hồi từ admin:</div>
+          <div style="color: #333; white-space: pre-wrap;">${data.replyMessage}</div>
+          ${repliedAt ? `<div style="color: #666; font-size: 12px; margin-top: 8px;">📅 ${repliedAt}</div>` : ''}
+        </div>
+      `;
+    }
+    
+    detailContent.innerHTML = `
+      <div style="max-width: 800px;">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+            <div>
+              <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">👤 ${data.userDisplayName || data.userEmail || 'Người dùng'}</div>
+              <div style="color: #666; font-size: 14px;">📧 ${data.userEmail || 'Không có email'}</div>
+            </div>
+            <span style="background: ${status === 'pending' ? '#FF9800' : status === 'replied' ? '#4CAF50' : '#2196F3'}; color: white; padding: 6px 16px; border-radius: 16px; font-size: 14px;">
+              ${statusText}
+            </span>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Nội dung phản hồi:</div>
+            <div style="background: #F5F5F5; padding: 12px; border-radius: 8px; white-space: pre-wrap; line-height: 1.6;">
+              ${data.content || 'Không có nội dung'}
+            </div>
+          </div>
+          
+          ${imagesHtml}
+          
+          <div style="color: #666; font-size: 12px; margin-top: 16px;">📅 Gửi lúc: ${createdAt}</div>
+        </div>
+        
+        ${replyHtml}
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 16px;">
+          <div style="font-weight: bold; margin-bottom: 12px;">💬 Phản hồi từ admin:</div>
+          <textarea id="replyMessage" placeholder="Nhập phản hồi cho người dùng..." style="width: 100%; min-height: 120px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;">${data.replyMessage || ''}</textarea>
+          <div style="display: flex; gap: 12px; margin-top: 12px;">
+            <button class="btn btn-primary" onclick="saveFeedbackReply('${feedbackId}')" style="flex: 1;">
+              ${data.replyMessage ? '✏️ Cập nhật phản hồi' : '💬 Gửi phản hồi'}
+            </button>
+            <select id="feedbackStatus" style="padding: 10px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+              <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Chờ xử lý</option>
+              <option value="read" ${status === 'read' ? 'selected' : ''}>👁️ Đã đọc</option>
+              <option value="replied" ${status === 'replied' ? 'selected' : ''}>✅ Đã phản hồi</option>
+              <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>✔️ Đã giải quyết</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `;
+  }).catch(error => {
+    detailContent.innerHTML = `<div class="status error">❌ Lỗi: ${error.message}</div>`;
+  });
+}
+
+// Save feedback reply
+function saveFeedbackReply(feedbackId) {
+  console.log('saveFeedbackReply called with feedbackId:', feedbackId);
+  
+  const replyMessageEl = document.getElementById('replyMessage');
+  const statusEl = document.getElementById('feedbackStatus');
+  
+  if (!replyMessageEl || !statusEl) {
+    alert('❌ Không tìm thấy form phản hồi. Vui lòng tải lại trang.');
+    console.error('Missing elements:', { replyMessageEl, statusEl });
+    return;
+  }
+  
+  const replyMessage = replyMessageEl.value.trim();
+  const status = statusEl.value;
+  
+  // Tìm hoặc tạo status element để hiển thị kết quả
+  let statusDisplayEl = document.getElementById('status');
+  if (!statusDisplayEl) {
+    const detailContent = document.getElementById('detailContent');
+    statusDisplayEl = document.createElement('div');
+    statusDisplayEl.id = 'status';
+    statusDisplayEl.className = 'status';
+    detailContent.appendChild(statusDisplayEl);
+  }
+  
+  // Hiển thị loading
+  statusDisplayEl.className = 'status';
+  statusDisplayEl.textContent = '⏳ Đang lưu...';
+  
+  const updateData = {
+    status: status,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  // Nếu có reply message, thêm vào update data
+  if (replyMessage) {
+    updateData.replyMessage = replyMessage;
+    updateData.repliedAt = firebase.firestore.FieldValue.serverTimestamp();
+    // Nếu có reply, status phải là 'replied'
+    if (status !== 'replied') {
+      updateData.status = 'replied';
+    }
+  }
+  
+  console.log('Updating feedback with data:', updateData);
+  
+  db.collection('feedback').doc(feedbackId).update(updateData)
+    .then(() => {
+      console.log('✅ Update successful');
+      statusDisplayEl.className = 'status success';
+      statusDisplayEl.textContent = '✅ Đã cập nhật phản hồi thành công!';
+      setTimeout(() => {
+        showFeedbackDetail(feedbackId); // Reload detail
+      }, 1000);
+    })
+    .catch(error => {
+      console.error('❌ Update error:', error);
+      statusDisplayEl.className = 'status error';
+      statusDisplayEl.textContent = `❌ Lỗi: ${error.message}`;
+      
+      // Hiển thị thông báo chi tiết hơn
+      if (error.code === 'permission-denied') {
+        statusDisplayEl.textContent += '\n⚠️ Lỗi quyền truy cập. Vui lòng kiểm tra Firestore Rules hoặc đăng nhập admin.';
+      }
+    });
 }
 
 // Initialize

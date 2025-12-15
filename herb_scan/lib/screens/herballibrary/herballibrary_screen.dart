@@ -338,7 +338,7 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
                         );
                       },
                       onBookmarkTap: () {
-                        // TODO: Handle bookmark
+    
                       },
                       onCategoryTap: (categoryName) {
                         // Filter by category khi tap vào category trong card
@@ -435,7 +435,7 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
                                     );
                                   },
                                   onBookmarkTap: () {
-                                    // TODO: Handle bookmark
+
                                   },
                                   onCategoryTap: (categoryName) {
                                     if (categoryName.isEmpty) return;
@@ -472,7 +472,7 @@ class _HerbLibraryScreenState extends State<HerbLibraryScreen> with WidgetsBindi
                   ],
                 ],
               );
-            }).toList(),
+            }),
           ]),
         );
       },

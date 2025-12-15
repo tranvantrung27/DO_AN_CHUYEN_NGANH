@@ -21,8 +21,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.initState();
     print('🔍 ForgotPasswordScreen initialized');
   }
-  String _email = 'herbscan@youremail.com';
-  String _phoneNumber = '+84-334-xxx-xxx';
+  final String _email = 'herbscan@youremail.com';
+  final String _phoneNumber = '+84-334-xxx-xxx';
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +45,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         width: 24.w,
                         height: 24.h,
                         decoration: BoxDecoration(
-                          color: AppColors.textPrimary.withOpacity(0.1),
+                          color: AppColors.textPrimary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Center(

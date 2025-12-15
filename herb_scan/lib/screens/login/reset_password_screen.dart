@@ -147,7 +147,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                 // Back button
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: Container(
+                  child: SizedBox(
                     width: 24.w,
                     height: 24.h,
                     child: SvgPicture.asset(

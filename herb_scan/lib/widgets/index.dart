@@ -1,11 +1,13 @@
 /// Barrel export file cho widgets
 /// Giúp import dễ dàng hơn: import 'package:herb_scan/widgets/index.dart';
+library;
 
 export 'intro_navigation.dart';
 export 'common/animated_dot_indicator.dart';
 export 'common/app_button.dart';
 export 'common/app_loading.dart';
 export 'common/app_text_field.dart';
+export 'common/app_input_field.dart';
 export 'common/social_login_button.dart';
 export 'common/login_fields.dart';
 export 'common/register_fields.dart';
@@ -21,3 +23,4 @@ export 'herballibrary/herb_library_header.dart';
 export 'history_tab_navigation.dart';
 export 'notification_tab_navigation.dart';
 export 'cards/herb_card.dart';
+export 'scan/index.dart';

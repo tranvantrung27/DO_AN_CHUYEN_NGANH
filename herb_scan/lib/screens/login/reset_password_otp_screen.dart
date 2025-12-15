@@ -67,27 +67,33 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
         setState(() {
           _currentVerificationId = result.verificationId!;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã gửi mã OTP đến ${widget.phoneNumber}'),
-            backgroundColor: AppColors.primaryGreen,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã gửi mã OTP đến ${widget.phoneNumber}'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        }
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.errorMessage ?? 'Có lỗi xảy ra'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.errorMessage ?? 'Có lỗi xảy ra'),
+            content: Text('Có lỗi xảy ra: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Có lỗi xảy ra: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -124,9 +130,12 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
       );
 
       // Hide loading
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
       if (verifyResult.isSuccess) {
+        if (!mounted) return;
         // Navigate to new password screen với OTP đã verify
         Navigator.pushReplacement(
           context,
@@ -139,23 +148,26 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
           ),
         );
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(verifyResult.errorMessage ?? 'Mã OTP không đúng. Vui lòng thử lại'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading
+      if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(verifyResult.errorMessage ?? 'Mã OTP không đúng. Vui lòng thử lại'),
+            content: Text('Mã OTP không đúng. Vui lòng thử lại'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      // Hide loading
-      Navigator.pop(context);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Mã OTP không đúng. Vui lòng thử lại'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -287,7 +299,7 @@ class _ResetPasswordOTPScreenState extends State<ResetPasswordOTPScreen> {
                 color: AppColors.backgroundCream,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, -2),
                     spreadRadius: 0,

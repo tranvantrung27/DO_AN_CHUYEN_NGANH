@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../constants/index.dart';
 import '../../widgets/index.dart';
-import '../../widgets/common/social_login_button.dart';
 import '../../mixins/index.dart';
 import '../../services/index.dart';
 import '../../models/index.dart';
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   Widget _buildRememberAndForgot() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -320,10 +320,10 @@ class _LoginScreenState extends State<LoginScreen>
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else if (result.errorMessage != null) {
-        print('🔍 Login error: ${result.errorMessage}');
+        debugPrint('🔍 Login error: ${result.errorMessage}');
         throw Exception(result.errorMessage);
       } else {
-        print('🔍 Login failed but no error message provided');
+        debugPrint('🔍 Login failed but no error message provided');
         throw Exception('Đăng nhập thất bại');
       }
     }, 
@@ -351,21 +351,21 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _handleAppleLogin() async {
-    // TODO: Implement Apple login
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Apple login chưa tích hợp')),
     );
   }
 
   void _handleFacebookLogin() async {
-    // TODO: Implement Facebook login
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Facebook login chưa tích hợp')),
     );
   }
 
   void _handleForgotPassword() async {
-    print('🔍 Forgot password button tapped');
+    debugPrint('🔍 Forgot password button tapped');
     // Navigate to forgot password screen
     Navigator.push(
       context,

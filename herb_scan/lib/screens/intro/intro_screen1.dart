@@ -21,7 +21,7 @@ class Intro1Screen extends StatelessWidget {
             Positioned(
               left: 0,
               top: 0,
-              child: Container(
+              child: SizedBox(
                 width: 430,
                 height: 588,
                 child: Stack(

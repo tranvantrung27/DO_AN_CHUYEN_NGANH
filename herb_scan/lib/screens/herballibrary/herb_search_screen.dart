@@ -277,10 +277,10 @@ class _HerbSearchScreenState extends State<HerbSearchScreen> {
               );
             },
             onBookmarkTap: () {
-              // TODO: Handle bookmark
+
             },
             onCategoryTap: (categoryName) {
-              // TODO: Navigate back and filter by category
+  
             },
           ),
         );

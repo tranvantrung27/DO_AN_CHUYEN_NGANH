@@ -81,7 +81,7 @@ class HerbLibraryHeaderDelegate extends SliverPersistentHeaderDelegate {
                             'Chăm sóc sức khỏe theo cách ông bà ta',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.playfairDisplay(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w300,
                             ),
